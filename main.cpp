@@ -1,9 +1,6 @@
-// This has been adapted from the Vulkan tutorial
-
 #include "Starter.hpp"
 
 // The uniform buffer objects data structures
-// Remember to use the correct alignas(...) value
 //        float : alignas(4)
 //        vec2  : alignas(8)
 //        vec3  : alignas(16)
@@ -43,9 +40,7 @@ struct VertexOverlay {
 	glm::vec2 UV;
 };
 
-/* A16 */
-/* Add the C++ datastructure for the required vertex format */
-struct VertexVColor { //DONE
+struct VertexVColor {
 	glm::vec3 pos;
 	glm::vec3 norm;
 	glm::vec3 color;
@@ -60,43 +55,30 @@ class A16 : public BaseProject {
 	float Ar;
 
 	// Descriptor Layouts ["classes" of what will be passed to the shaders]
-	DescriptorSetLayout DSLGubo, DSLMesh, DSLOverlay;
-	/* A16 */	
-	/* Add the variable that will contain the required Descriptor Set Layout */
-	DescriptorSetLayout DSLVColor; //DONE
+	DescriptorSetLayout DSLGubo, DSLMesh, DSLOverlay, DSLVColor;
 
 	// Vertex formats
 	VertexDescriptor VMesh;
 	VertexDescriptor VOverlay;
-	/* A16 */
-	/* Add the variable that will contain the required Vertex format definition */
-	VertexDescriptor VVColor; //DONE
+	VertexDescriptor VVColor;
 
 	// Pipelines [Shader couples]
 	Pipeline PMesh;
 	Pipeline POverlay;
-	/* A16 */
-	/* Add the variable that will contain the new pipeline */
-	Pipeline PVColor; //DONE
+	Pipeline PVColor;
 
 	// Models, textures and Descriptors (values assigned to the uniforms)
 	// Please note that Model objects depends on the corresponding vertex structure
 	Model<VertexMesh> MBody, MHandle, MWheel;
-	/* A16 */
-	/* Add the variable that will contain the model for the room */
-	Model<VertexVColor> MRoom;//DONE
+	Model<VertexVColor> MRoom;
 	Model<VertexOverlay> MKey, MSplash;
-	DescriptorSet DSGubo, DSBody, DSHandle, DSWheel1, DSWheel2, DSWheel3, DSKey, DSSplash;
-	/* A16 */
-	/* Add the variable that will contain the Descriptor Set for the room */
-	DescriptorSet DSRoom; //DONE	
+
+	DescriptorSet DSGubo, DSBody, DSHandle, DSWheel1, DSWheel2, DSWheel3, DSKey, DSSplash, DSRoom;
+
 	Texture TBody, THandle, TWheel, TKey, TSplash;
 	
 	// C++ storage for uniform variables
-	MeshUniformBlock uboBody, uboHandle, uboWheel1, uboWheel2, uboWheel3;
-	/* A16 */
-	/* Add the variable that will contain the Uniform Block in slot 0, set 1 of the room */
-	MeshUniformBlock uboRoom; //DONE
+	MeshUniformBlock uboBody, uboHandle, uboWheel1, uboWheel2, uboWheel3, uboRoom;
 	GlobalUniformBlock gubo;
 	OverlayUniformBlock uboKey, uboSplash;
 
@@ -119,11 +101,9 @@ class A16 : public BaseProject {
 		initialBackgroundColor = {0.0f, 0.005f, 0.01f, 1.0f};
 		
 		// Descriptor pool sizes
-		/* A16 */
-		/* Update the requirements for the size of the pool */
 		uniformBlocksInPool = 9;
 		texturesInPool = 7;
-		setsInPool = 9; //DONE
+		setsInPool = 9;
 		
 		Ar = (float)windowWidth / (float)windowHeight;
 	}
@@ -152,15 +132,15 @@ class A16 : public BaseProject {
 					{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
 					{1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
 				});
-		/* A16 */
-		/* Init the new Data Set Layout */
+
 		DSLVColor.init(this, {
 					{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
-				}); //DONE
+				});
 				
 		DSLGubo.init(this, {
 					{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
 				});
+
 
 		// Vertex descriptors
 		VMesh.init(this, {
@@ -208,8 +188,6 @@ class A16 : public BaseProject {
 				         sizeof(glm::vec2), UV}
 				});
 
-		/* A16 */
-		/* Define the new Vertex Format */
 		VVColor.init(this, {
 			{0,sizeof(VertexVColor), VK_VERTEX_INPUT_RATE_VERTEX}
 		},{
@@ -219,7 +197,7 @@ class A16 : public BaseProject {
 				sizeof(glm::vec3), NORMAL},
 			{0,2,VK_FORMAT_R32G32B32_SFLOAT,offsetof(VertexVColor,color),
 				sizeof(glm::vec3), COLOR}
-		}); //DONE
+		});
 		
 
 		// Pipelines [Shader couples]
@@ -231,10 +209,8 @@ class A16 : public BaseProject {
 		POverlay.init(this, &VOverlay, "shaders/OverlayVert.spv", "shaders/OverlayFrag.spv", {&DSLOverlay});
 		POverlay.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
  								    VK_CULL_MODE_NONE, false);
-		/* A16 */
-		/* Create the new pipeline, using shaders "VColorVert.spv" and "VColorFrag.spv" */
 		PVColor.init(this, &VVColor, "shaders/VColorVert.spv","shaders/VColorFrag.spv", {&DSLGubo, &DSLVColor});
-		//DONE
+
 
 		// Models, textures and Descriptors (values assigned to the uniforms)
 
@@ -245,10 +221,7 @@ class A16 : public BaseProject {
 		MBody.init(this,   &VMesh, "models/SlotBody.obj", OBJ);
 		MHandle.init(this, &VMesh, "models/SlotHandle.obj", OBJ);
 		MWheel.init(this,  &VMesh, "models/SlotWheel.obj", OBJ);
-		/* A16 */
-		/* load the mesh for the room, contained in OBJ file "Room.obj" */
 		MRoom.init(this, &VVColor, "models/Room.obj", OBJ);
-		//DONE
 
 
 		
@@ -285,9 +258,7 @@ class A16 : public BaseProject {
 		// This creates a new pipeline (with the current surface), using its shaders
 		PMesh.create();
 		POverlay.create();
-		/* A16 */
-		/* Create the new pipeline */
-		PVColor.create(); //DONE
+		PVColor.create();
 		
 		// Here you define the data set
 		DSBody.init(this, &DSLMesh, {
@@ -316,12 +287,9 @@ class A16 : public BaseProject {
 					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
 					{1, TEXTURE, 0, &TWheel}
 				});
-		/* A16 */
-		/* Define the data set for the room */
 		DSRoom.init(this, &DSLVColor, {
 					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr}
-				}); //DONE
-
+				});
 		DSKey.init(this, &DSLOverlay, {
 					{0, UNIFORM, sizeof(OverlayUniformBlock), nullptr},
 					{1, TEXTURE, 0, &TKey}
@@ -341,9 +309,7 @@ class A16 : public BaseProject {
 		// Cleanup pipelines
 		PMesh.cleanup();
 		POverlay.cleanup();
-		/* A16 */
-		/* cleanup the new pipeline */
-		PVColor.cleanup(); //DONE
+		PVColor.cleanup();
 
 		// Cleanup datasets
 		DSBody.cleanup();
@@ -351,10 +317,7 @@ class A16 : public BaseProject {
 		DSWheel1.cleanup();
 		DSWheel2.cleanup();
 		DSWheel3.cleanup();
-		/* A16 */
-		/* cleanup the dataset for the room */
-		DSRoom.cleanup(); //DONE
-
+		DSRoom.cleanup();
 		DSKey.cleanup();
 		DSSplash.cleanup();
 		DSGubo.cleanup();
@@ -378,24 +341,18 @@ class A16 : public BaseProject {
 		MWheel.cleanup();
 		MKey.cleanup();
 		MSplash.cleanup();
-		/* A16 */
-		/* Cleanup the mesh for the room */
-		MRoom.cleanup(); //DONE
+		MRoom.cleanup();
 		
 		// Cleanup descriptor set layouts
 		DSLMesh.cleanup();
 		DSLOverlay.cleanup();
-		/* A16 */
-		/* Cleanup the new Descriptor Set Layout */
-		DSLVColor.cleanup(); //DONE
+		DSLVColor.cleanup();
 
 		DSLGubo.cleanup();
 		
 		// Destroies the pipelines
 		PMesh.destroy();		
 		POverlay.destroy();
-		/* A16 */
-		/* Destroy the new pipeline */
 		PVColor.destroy();
 	}
 	
@@ -446,16 +403,15 @@ class A16 : public BaseProject {
 		DSWheel3.bind(commandBuffer, PMesh, 1, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 				static_cast<uint32_t>(MWheel.indices.size()), 1, 0, 0, 0);
-		/* A16 */
-		/* Insert the commands to draw the room */
-		
+
+
 		PVColor.bind(commandBuffer);
 		MRoom.bind(commandBuffer);
 		DSGubo.bind(commandBuffer,PVColor, 0, currentImage);
 		DSRoom.bind(commandBuffer,PVColor,1,currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 				static_cast<uint32_t>(MRoom.indices.size()),1,0,0,0);
-		//DONE		
+	
 
 		POverlay.bind(commandBuffer);
 		MKey.bind(commandBuffer);
@@ -643,14 +599,12 @@ class A16 : public BaseProject {
 		uboWheel3.mMat = World;
 		uboWheel3.nMat = glm::inverse(glm::transpose(World));
 		DSWheel3.map(currentImage, &uboWheel3, sizeof(uboWheel3), 0);
-		/* A16 */
-		/* fill the uniform block for the room. Identical to the one of the body of the slot machine */
+
 		World = glm::mat4(1);		
 		uboRoom.amb = 1.0f; uboRoom.gamma = 180.0f; uboRoom.sColor = glm::vec3(1.0f);
 		uboRoom.mvpMat = Prj * View * World;
 		uboRoom.mMat = World;
 		uboRoom.nMat = glm::inverse(glm::transpose(World)); //DONE
-		/* map the uniform data block to the GPU */
 		DSRoom.map(currentImage, &uboRoom, sizeof(uboRoom), 0); //DONE
 
 
