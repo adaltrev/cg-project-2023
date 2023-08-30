@@ -1,2 +1,14 @@
 
 mbin
+bin
+cbin
+models/Room.obj
+models/SlotBody.obj
+models/SlotHandle.obj
+models/SlotWheel.obj
+textures/PressSpace.png
+textures/SlotBody.png
+textures/SlotHandle.png
+textures/SlotWheel.png
+textures/SplashScreen.png
+models/tunnel.015_Mesh.6443.mgcg

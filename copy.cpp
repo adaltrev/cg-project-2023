@@ -69,26 +69,18 @@ class Project : public BaseProject {
 
 	// Models, textures and Descriptors (values assigned to the uniforms)
 	// Please note that Model objects depends on the corresponding vertex structure
-	Model<VertexMesh> MBody, MHandle, MWheel;
-	Model<VertexVColor> MRoom;
-	Model<VertexOverlay> MKey, MSplash;
+	Model<VertexVColor> MTest;
 
-	DescriptorSet DSGubo, DSBody, DSHandle, DSWheel1, DSWheel2, DSWheel3, DSKey, DSSplash, DSRoom;
-
-	Texture TBody, THandle, TWheel, TKey, TSplash;
-	
+	DescriptorSet DSGubo, DSTest;
+ 	
 	// C++ storage for uniform variables
-	MeshUniformBlock uboBody, uboHandle, uboWheel1, uboWheel2, uboWheel3, uboRoom;
+	MeshUniformBlock uboTest;
 	GlobalUniformBlock gubo;
-	OverlayUniformBlock uboKey, uboSplash;
 
 	// Other application parameters
-	float CamH, CamRadius, CamPitch, CamYaw;
+	float alpha, beta, rho;
 	int gameState;
-	float HandleRot = 0.0;
-	float Wheel1Rot = 0.0;
-	float Wheel2Rot = 0.0;
-	float Wheel3Rot = 0.0;
+	glm::vec3 camPos;
 
 
 	// Here you set the main application parameters
@@ -101,9 +93,9 @@ class Project : public BaseProject {
 		initialBackgroundColor = {0.0f, 0.005f, 0.01f, 1.0f};
 		
 		// Descriptor pool sizes
-		uniformBlocksInPool = 9;
-		texturesInPool = 7;
-		setsInPool = 9;
+		uniformBlocksInPool = 2;
+		texturesInPool = 0;
+		setsInPool = 2;
 		
 		Ar = (float)windowWidth / (float)windowHeight;
 	}
@@ -210,47 +202,30 @@ class Project : public BaseProject {
 		POverlay.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
  								    VK_CULL_MODE_NONE, false);
 		PVColor.init(this, &VVColor, "shaders/VColorVert.spv","shaders/VColorFrag.spv", {&DSLGubo, &DSLVColor});
+		PVColor.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
+ 								    VK_CULL_MODE_NONE, true);
 
 
 		// Models, textures and Descriptors (values assigned to the uniforms)
-
 		// Create models
-		// The second parameter is the pointer to the vertex definition for this model
-		// The third parameter is the file name
-		// The last is a constant specifying the file type: currently only OBJ or GLTF
-		MBody.init(this,   &VMesh, "models/SlotBody.obj", OBJ);
-		MHandle.init(this, &VMesh, "models/SlotHandle.obj", OBJ);
-		MWheel.init(this,  &VMesh, "models/SlotWheel.obj", OBJ);
-		MRoom.init(this, &VVColor, "models/Room.obj", OBJ);
-
+		MTest.vertices.push_back({{0.0f,0.0f,0.0f},{0.0f,1.0f,0.0f},{255.0f,255.0f,255.0f}});
+		MTest.vertices.push_back({{10.0f,0.0f,0.0f},{0.0f,1.0f,0.0f},{255.0f,255.0f,255.0f}});
+		MTest.vertices.push_back({{0.0f,0.0f,10.0f},{0.0f,1.0f,0.0f},{255.0f,255.0f,255.0f}});
+		MTest.vertices.push_back({{10.0f,0.0f,10.0f},{0.0f,1.0f,0.0f},{255.0f,255.0f,255.0f}});
+		MTest.indices.push_back(0); MTest.indices.push_back(1); MTest.indices.push_back(2); 
+		MTest.indices.push_back(1); MTest.indices.push_back(2); MTest.indices.push_back(3);
+		MTest.initMesh(this, &VVColor); 
 
 		
-		// Creates a mesh with direct enumeration of vertices and indices
-		MKey.vertices = {{{-0.8f, 0.6f}, {0.0f,0.0f}}, {{-0.8f, 0.95f}, {0.0f,1.0f}},
-						 {{ 0.8f, 0.6f}, {1.0f,0.0f}}, {{ 0.8f, 0.95f}, {1.0f,1.0f}}};
-		MKey.indices = {0, 1, 2,    1, 2, 3};
-		MKey.initMesh(this, &VOverlay);
-		
-		// Creates a mesh with direct enumeration of vertices and indices
-		MSplash.vertices = {{{-1.0f, -0.58559f}, {0.0102f, 0.0f}}, {{-1.0f, 0.58559f}, {0.0102f,0.85512f}},
-						 {{ 1.0f,-0.58559f}, {1.0f,0.0f}}, {{ 1.0f, 0.58559f}, {1.0f,0.85512f}}};
-		MSplash.indices = {0, 1, 2,    1, 2, 3};
-		MSplash.initMesh(this, &VOverlay);
 		
 		// Create the textures
-		// The second parameter is the file name
-		TBody.init(this,   "textures/SlotBody.png");
-		THandle.init(this, "textures/SlotHandle.png");
-		TWheel.init(this,  "textures/SlotWheel.png");
-		TKey.init(this,    "textures/PressSpace.png");
-		TSplash.init(this, "textures/SplashScreen.png");
 		
 		// Init local variables
-		CamH = 1.0f;
-		CamRadius = 3.0f;
-		CamPitch = glm::radians(15.f);
-		CamYaw = glm::radians(30.f);
+		alpha = 0.0f;
+		beta = 0.0f;
+		rho = 0.0f;
 		gameState = 0;
+		camPos = glm::vec3(0.0f, -1.0f, 0.0f);
 	}
 	
 	// Here you create your pipelines and Descriptor Sets!
@@ -261,43 +236,9 @@ class Project : public BaseProject {
 		PVColor.create();
 		
 		// Here you define the data set
-		DSBody.init(this, &DSLMesh, {
-		// the second parameter, is a pointer to the Uniform Set Layout of this set
-		// the last parameter is an array, with one element per binding of the set.
-		// first  elmenet : the binding number
-		// second element : UNIFORM or TEXTURE (an enum) depending on the type
-		// third  element : only for UNIFORMs, the size of the corresponding C++ object. For texture, just put 0
-		// fourth element : only for TEXTUREs, the pointer to the corresponding texture object. For uniforms, use nullptr
-					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
-					{1, TEXTURE, 0, &TBody}
-				});
-		DSHandle.init(this, &DSLMesh, {
-					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
-					{1, TEXTURE, 0, &THandle}
-				});
-		DSWheel1.init(this, &DSLMesh, {
-					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
-					{1, TEXTURE, 0, &TWheel}
-				});
-		DSWheel2.init(this, &DSLMesh, {
-					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
-					{1, TEXTURE, 0, &TWheel}
-				});
-		DSWheel3.init(this, &DSLMesh, {
-					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
-					{1, TEXTURE, 0, &TWheel}
-				});
-		DSRoom.init(this, &DSLVColor, {
+		DSTest.init(this, &DSLVColor, {
 					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr}
-				});
-		DSKey.init(this, &DSLOverlay, {
-					{0, UNIFORM, sizeof(OverlayUniformBlock), nullptr},
-					{1, TEXTURE, 0, &TKey}
-				});
-		DSSplash.init(this, &DSLOverlay, {
-					{0, UNIFORM, sizeof(OverlayUniformBlock), nullptr},
-					{1, TEXTURE, 0, &TSplash}
-				});
+				});		
 		DSGubo.init(this, &DSLGubo, {
 					{0, UNIFORM, sizeof(GlobalUniformBlock), nullptr}
 				});
@@ -312,14 +253,7 @@ class Project : public BaseProject {
 		PVColor.cleanup();
 
 		// Cleanup datasets
-		DSBody.cleanup();
-		DSHandle.cleanup();
-		DSWheel1.cleanup();
-		DSWheel2.cleanup();
-		DSWheel3.cleanup();
-		DSRoom.cleanup();
-		DSKey.cleanup();
-		DSSplash.cleanup();
+		DSTest.cleanup();
 		DSGubo.cleanup();
 	}
 
@@ -329,25 +263,14 @@ class Project : public BaseProject {
 	// methods: .cleanup() recreates them, while .destroy() delete them completely
 	void localCleanup() {
 		// Cleanup textures
-		TBody.cleanup();
-		THandle.cleanup();
-		TWheel.cleanup();
-		TKey.cleanup();
-		TSplash.cleanup();
 		
 		// Cleanup models
-		MBody.cleanup();
-		MHandle.cleanup();
-		MWheel.cleanup();
-		MKey.cleanup();
-		MSplash.cleanup();
-		MRoom.cleanup();
+		MTest.cleanup();
 		
 		// Cleanup descriptor set layouts
 		DSLMesh.cleanup();
 		DSLOverlay.cleanup();
 		DSLVColor.cleanup();
-
 		DSLGubo.cleanup();
 		
 		// Destroies the pipelines
@@ -361,74 +284,26 @@ class Project : public BaseProject {
 	// with their buffers and textures
 	
 	void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
-		// sets global uniforms (see below fro parameters explanation)
-		DSGubo.bind(commandBuffer, PMesh, 0, currentImage);
+		// sets global uniforms
 
 		// binds the pipeline
-		PMesh.bind(commandBuffer);
-		// For a pipeline object, this command binds the corresponing pipeline to the command buffer passed in its parameter
 
 		// binds the model
-		MBody.bind(commandBuffer);
-		// For a Model object, this command binds the corresponing index and vertex buffer
-		// to the command buffer passed in its parameter
 		
 		// binds the data set
-		DSBody.bind(commandBuffer, PMesh, 1, currentImage);
-		// For a Dataset object, this command binds the corresponing dataset
-		// to the command buffer and pipeline passed in its first and second parameters.
-		// The third parameter is the number of the set being bound
-		// As described in the Vulkan tutorial, a different dataset is required for each image in the swap chain.
-		// This is done automatically in file Starter.hpp, however the command here needs also the index
-		// of the current image in the swap chain, passed in its last parameter
 					
 		// record the drawing command in the command buffer
+		DSGubo.bind(commandBuffer,PVColor,0,currentImage);
+		PVColor.bind(commandBuffer);			
+		MTest.bind(commandBuffer);
+		DSTest.bind(commandBuffer,PVColor,1,currentImage);
 		vkCmdDrawIndexed(commandBuffer,
-				static_cast<uint32_t>(MBody.indices.size()), 1, 0, 0, 0);
-		// the second parameter is the number of indexes to be drawn. For a Model object,
-		// this can be retrieved with the .indices.size() method.
-
-		MHandle.bind(commandBuffer);
-		DSHandle.bind(commandBuffer, PMesh, 1, currentImage);
-		vkCmdDrawIndexed(commandBuffer,
-				static_cast<uint32_t>(MHandle.indices.size()), 1, 0, 0, 0);
-
-		MWheel.bind(commandBuffer);
-		DSWheel1.bind(commandBuffer, PMesh, 1, currentImage);
-		vkCmdDrawIndexed(commandBuffer,
-				static_cast<uint32_t>(MWheel.indices.size()), 1, 0, 0, 0);
-		DSWheel2.bind(commandBuffer, PMesh, 1, currentImage);
-		vkCmdDrawIndexed(commandBuffer,
-				static_cast<uint32_t>(MWheel.indices.size()), 1, 0, 0, 0);
-		DSWheel3.bind(commandBuffer, PMesh, 1, currentImage);
-		vkCmdDrawIndexed(commandBuffer,
-				static_cast<uint32_t>(MWheel.indices.size()), 1, 0, 0, 0);
-
-
-		PVColor.bind(commandBuffer);
-		MRoom.bind(commandBuffer);
-		DSGubo.bind(commandBuffer,PVColor, 0, currentImage);
-		DSRoom.bind(commandBuffer,PVColor,1,currentImage);
-		vkCmdDrawIndexed(commandBuffer,
-				static_cast<uint32_t>(MRoom.indices.size()),1,0,0,0);
-	
-
-		POverlay.bind(commandBuffer);
-		MKey.bind(commandBuffer);
-		DSKey.bind(commandBuffer, POverlay, 0, currentImage);
-		vkCmdDrawIndexed(commandBuffer,
-				static_cast<uint32_t>(MKey.indices.size()), 1, 0, 0, 0);
-
-		MSplash.bind(commandBuffer);
-		DSSplash.bind(commandBuffer, POverlay, 0, currentImage);
-		vkCmdDrawIndexed(commandBuffer,
-				static_cast<uint32_t>(MSplash.indices.size()), 1, 0, 0, 0);
+				static_cast<uint32_t>(MTest.indices.size()),1,0,0,0);
 	}
 
 	// Here is where you update the uniforms.
 	// Very likely this will be where you will be writing the logic of your application.
 	void updateUniformBuffer(uint32_t currentImage) {
-		// Standard procedure to quit when the ESC key is pressed
 		if(glfwGetKey(window, GLFW_KEY_ESCAPE)) {
 			glfwSetWindowShouldClose(window, GL_TRUE);
 		}
@@ -459,24 +334,32 @@ class Project : public BaseProject {
 		
 		// Parameters
 		// Camera FOV-y, Near Plane and Far Plane
-		const float FOVy = glm::radians(90.0f);
-		const float nearPlane = 0.1f;
-		const float farPlane = 100.0f;
-		const float rotSpeed = glm::radians(90.0f);
-		const float movSpeed = 1.0f;
-		
-		CamH += m.z * movSpeed * deltaT;
-		CamRadius -= m.x * movSpeed * deltaT;
-		CamPitch -= r.x * rotSpeed * deltaT;
-		CamYaw += r.y * rotSpeed * deltaT;
-		
-		glm::mat4 Prj = glm::perspective(FOVy, Ar, nearPlane, farPlane);
+		const float fov = glm::radians(45.0f);
+		const float n = 0.1f;
+		const float f = 100.0f;
+		const float ROT_SPEED = glm::radians(90.0f);
+		const float MOVE_SPEED = 1.0f;
+		const float minPitch = glm::radians(-60.0f);
+		const float maxPitch = glm::radians(60.0f);
+
+		alpha += ROT_SPEED * (-r.y) * deltaT;
+		beta += ROT_SPEED * (-r.x) * deltaT;
+		beta = glm::clamp(beta,minPitch,maxPitch);
+		rho += ROT_SPEED * r.z * deltaT;
+
+		glm::vec3 ux = glm::vec3(glm::rotate(glm::mat4(1),alpha,glm::vec3(0,1,0)) * glm::vec4(1,0,0,1));
+		glm::vec3 uy = glm::vec3(0,1,0);
+		glm::vec3 uz = glm::vec3(glm::rotate(glm::mat4(1),alpha, glm::vec3(0,1,0)) * glm::vec4(0,0,-1,1));
+		camPos -= ux * MOVE_SPEED * m.x * deltaT;
+		camPos -= uz * MOVE_SPEED * m.z * deltaT;
+				
+		glm::mat4 Prj = glm::perspective(fov, Ar, n, f);
 		Prj[1][1] *= -1;
-		glm::vec3 camPos = camTarget +
-							  CamRadius * glm::vec3(cos(CamPitch) * sin(CamYaw),
-													sin(CamPitch),
-													cos(CamPitch) * cos(CamYaw));
-		glm::mat4 View = glm::lookAt(camPos, camTarget, glm::vec3(0,1,0));
+		
+		glm::mat4 View = glm::rotate(glm::mat4(1.0), -beta, glm::vec3(1,0,0)) *
+						 glm::rotate(glm::mat4(1.0), -alpha, glm::vec3(0,1,0)) *
+						 glm::translate(glm::mat4(1.0), camPos);
+
 
 		gubo.DlightDir = glm::normalize(glm::vec3(1, 2, 3));
 		gubo.DlightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
@@ -491,57 +374,11 @@ class Project : public BaseProject {
 		// the fourth parameter is the location inside the descriptor set of this uniform block
 
 		glm::mat4 World = glm::mat4(1);		
-		uboBody.amb = 1.0f; uboBody.gamma = 180.0f; uboBody.sColor = glm::vec3(1.0f);
-		uboBody.mvpMat = Prj * View * World;
-		uboBody.mMat = World;
-		uboBody.nMat = glm::inverse(glm::transpose(World));
-		DSBody.map(currentImage, &uboBody, sizeof(uboBody), 0);
-	
-		World = glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.3f,0.5f,-0.15f)),
-							HandleRot, glm::vec3(1,0,0));
-		uboHandle.amb = 1.0f; uboHandle.gamma = 180.0f; uboHandle.sColor = glm::vec3(1.0f);
-		uboHandle.mvpMat = Prj * View * World;
-		uboHandle.mMat = World;
-		uboHandle.nMat = glm::inverse(glm::transpose(World));
-		DSHandle.map(currentImage, &uboHandle, sizeof(uboHandle), 0);
-	
-		World = glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(-0.15f,0.93f,-0.15f)),
-							Wheel1Rot, glm::vec3(1,0,0));
-		uboWheel1.amb = 1.0f; uboWheel1.gamma = 180.0f; uboWheel1.sColor = glm::vec3(1.0f);
-		uboWheel1.mvpMat = Prj * View * World;
-		uboWheel1.mMat = World;
-		uboWheel1.nMat = glm::inverse(glm::transpose(World));
-		DSWheel1.map(currentImage, &uboWheel1, sizeof(uboWheel1), 0);
-	
-		World = glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f,0.93f,-0.15f)),
-							Wheel2Rot, glm::vec3(1,0,0));
-		uboWheel2.amb = 1.0f; uboWheel2.gamma = 180.0f; uboWheel2.sColor = glm::vec3(1.0f);
-		uboWheel2.mvpMat = Prj * View * World;
-		uboWheel2.mMat = World;
-		uboWheel2.nMat = glm::inverse(glm::transpose(World));
-		DSWheel2.map(currentImage, &uboWheel2, sizeof(uboWheel2), 0);
-	
-		World = glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.15f,0.93f,-0.15f)),
-							Wheel3Rot, glm::vec3(1,0,0));
-		uboWheel3.amb = 1.0f; uboWheel3.gamma = 180.0f; uboWheel3.sColor = glm::vec3(1.0f);
-		uboWheel3.mvpMat = Prj * View * World;
-		uboWheel3.mMat = World;
-		uboWheel3.nMat = glm::inverse(glm::transpose(World));
-		DSWheel3.map(currentImage, &uboWheel3, sizeof(uboWheel3), 0);
-
-		World = glm::mat4(1);		
-		uboRoom.amb = 1.0f; uboRoom.gamma = 180.0f; uboRoom.sColor = glm::vec3(1.0f);
-		uboRoom.mvpMat = Prj * View * World;
-		uboRoom.mMat = World;
-		uboRoom.nMat = glm::inverse(glm::transpose(World)); //DONE
-		DSRoom.map(currentImage, &uboRoom, sizeof(uboRoom), 0); //DONE
-
-
-		uboKey.visible = (gameState == 1) ? 1.0f : 0.0f;
-		DSKey.map(currentImage, &uboKey, sizeof(uboKey), 0);
-
-		uboSplash.visible = (gameState == 0) ? 1.0f : 0.0f;
-		DSSplash.map(currentImage, &uboSplash, sizeof(uboSplash), 0);
+		uboTest.amb = 1.0f; uboTest.gamma = 180.0f; uboTest.sColor = glm::vec3(1.0f);
+		uboTest.mvpMat = Prj * View * World;
+		uboTest.mMat = World;
+		uboTest.nMat = glm::inverse(glm::transpose(World)); //DONE
+		DSTest.map(currentImage, &uboTest, sizeof(uboTest), 0); //DONE
 	}	
 };
 
