@@ -47,6 +47,9 @@ struct VertexVColor {
 };
 
 
+class Project;
+void GameLogic(Project *A, float Ar, glm::mat4 &View, glm::mat4 &Prj, glm::vec3 &camPos, int &currentScene);
+
 // MAIN ! 
 class Project : public BaseProject {
 	protected:
@@ -70,18 +73,19 @@ class Project : public BaseProject {
 	// Models, textures and Descriptors (values assigned to the uniforms)
 	// Please note that Model objects depends on the corresponding vertex structure
 	Model<VertexVColor> MTest;
+	Model<VertexOverlay> MMenu, MCrosshair;
 
-	DescriptorSet DSGubo, DSTest;
+	DescriptorSet DSGubo, DSTest, DSMenu, DSCrosshair;
+
+	Texture TMenu, TCrosshair;
  	
 	// C++ storage for uniform variables
 	MeshUniformBlock uboTest;
 	GlobalUniformBlock gubo;
+	OverlayUniformBlock uboMenu, uboCrosshair;
 
-	// Other application parameters
-	float alpha, beta, rho;
-	int gameState;
 	glm::vec3 camPos;
-
+	int currentScene = 0;
 
 	// Here you set the main application parameters
 	void setWindowParameters() {
@@ -93,9 +97,9 @@ class Project : public BaseProject {
 		initialBackgroundColor = {0.0f, 0.005f, 0.01f, 1.0f};
 		
 		// Descriptor pool sizes
-		uniformBlocksInPool = 2;
-		texturesInPool = 0;
-		setsInPool = 2;
+		uniformBlocksInPool = 3;
+		texturesInPool = 1;
+		setsInPool = 3;
 		
 		Ar = (float)windowWidth / (float)windowHeight;
 	}
@@ -199,7 +203,7 @@ class Project : public BaseProject {
 		// be used in this pipeline. The first element will be set 0, and so on..
 		PMesh.init(this, &VMesh, "shaders/MeshVert.spv", "shaders/MeshFrag.spv", {&DSLGubo, &DSLMesh});
 		POverlay.init(this, &VOverlay, "shaders/OverlayVert.spv", "shaders/OverlayFrag.spv", {&DSLOverlay});
-		POverlay.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
+		POverlay.setAdvancedFeatures(VK_COMPARE_OP_ALWAYS, VK_POLYGON_MODE_FILL,
  								    VK_CULL_MODE_NONE, false);
 		PVColor.init(this, &VVColor, "shaders/VColorVert.spv","shaders/VColorFrag.spv", {&DSLGubo, &DSLVColor});
 		PVColor.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
@@ -216,16 +220,21 @@ class Project : public BaseProject {
 		MTest.indices.push_back(1); MTest.indices.push_back(2); MTest.indices.push_back(3);
 		MTest.initMesh(this, &VVColor); 
 
-		
+
+		MMenu.vertices.push_back({{-1.0f,-1.0f},{0.0f,0.0f}});
+		MMenu.vertices.push_back({{-1.0f,1.0f},{0.0f,1.0f}});	
+		MMenu.vertices.push_back({{1.0f,-1.0f},{1.0f,0.0f}});	
+		MMenu.vertices.push_back({{1.0f,1.0f},{1.0f,1.0f}});	
+		MMenu.indices.push_back(0); MMenu.indices.push_back(1); MMenu.indices.push_back(2); 
+		MMenu.indices.push_back(1); MMenu.indices.push_back(2); MMenu.indices.push_back(3);
+		MMenu.initMesh(this, &VOverlay);		
 		
 		// Create the textures
+		TMenu.init(this, "textures/Menu.png");
 		
 		// Init local variables
-		alpha = 0.0f;
-		beta = 0.0f;
-		rho = 0.0f;
-		gameState = 0;
 		camPos = glm::vec3(0.0f, -1.0f, 0.0f);
+		
 	}
 	
 	// Here you create your pipelines and Descriptor Sets!
@@ -238,7 +247,11 @@ class Project : public BaseProject {
 		// Here you define the data set
 		DSTest.init(this, &DSLVColor, {
 					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr}
-				});		
+				});
+		DSMenu.init(this, &DSLOverlay, {
+					{0, UNIFORM, sizeof(OverlayUniformBlock), nullptr},
+					{1, TEXTURE, 0, &TMenu}
+				});
 		DSGubo.init(this, &DSLGubo, {
 					{0, UNIFORM, sizeof(GlobalUniformBlock), nullptr}
 				});
@@ -254,6 +267,7 @@ class Project : public BaseProject {
 
 		// Cleanup datasets
 		DSTest.cleanup();
+		DSMenu.cleanup();
 		DSGubo.cleanup();
 	}
 
@@ -263,9 +277,11 @@ class Project : public BaseProject {
 	// methods: .cleanup() recreates them, while .destroy() delete them completely
 	void localCleanup() {
 		// Cleanup textures
-		
+		TMenu.cleanup();
+
 		// Cleanup models
 		MTest.cleanup();
+		MMenu.cleanup();
 		
 		// Cleanup descriptor set layouts
 		DSLMesh.cleanup();
@@ -281,24 +297,25 @@ class Project : public BaseProject {
 	
 	// Here it is the creation of the command buffer:
 	// You send to the GPU all the objects you want to draw,
-	// with their buffers and textures
-	
+	// with their buffers and textures	
 	void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
-		// sets global uniforms
-
-		// binds the pipeline
-
-		// binds the model
-		
-		// binds the data set
-					
-		// record the drawing command in the command buffer
-		DSGubo.bind(commandBuffer,PVColor,0,currentImage);
-		PVColor.bind(commandBuffer);			
-		MTest.bind(commandBuffer);
-		DSTest.bind(commandBuffer,PVColor,1,currentImage);
-		vkCmdDrawIndexed(commandBuffer,
-				static_cast<uint32_t>(MTest.indices.size()),1,0,0,0);
+		switch(currentScene){
+			case 0:
+				POverlay.bind(commandBuffer);
+				MMenu.bind(commandBuffer);
+				DSMenu.bind(commandBuffer,POverlay,0,currentImage);
+				vkCmdDrawIndexed(commandBuffer,
+					static_cast<uint32_t>(MMenu.indices.size()),1,0,0,0);
+				break;
+			case 1:	
+				DSGubo.bind(commandBuffer,PVColor,0,currentImage);
+				PVColor.bind(commandBuffer);			
+				MTest.bind(commandBuffer);
+				DSTest.bind(commandBuffer,PVColor,1,currentImage);
+				vkCmdDrawIndexed(commandBuffer,
+					static_cast<uint32_t>(MTest.indices.size()),1,0,0,0);
+				break;
+		}
 	}
 
 	// Here is where you update the uniforms.
@@ -308,80 +325,39 @@ class Project : public BaseProject {
 			glfwSetWindowShouldClose(window, GL_TRUE);
 		}
 		
-		float deltaT;
-		glm::vec3 m = glm::vec3(0.0f);
-		glm::vec3 r = glm::vec3(0.0f);
-		bool fire = false;
-		getSixAxis(deltaT, m, r, fire);
+		glm::mat4 View;
+		glm::mat4 Prj;
+		GameLogic(this, Ar, View, Prj, camPos, currentScene);
 
-		//Start event when the key is released
-		static bool wasFire = false;
-		bool handleFire = (wasFire && (!fire));
-		wasFire = fire;
-		 
-		switch(gameState) {		
-		  case 0: //Splash screen
-			if(handleFire) {
-				gameState = 1;	
-			}
-			break;
-		  case 1: 
-			if(handleFire) {
-				gameState = 2;	
-			}
-			break;
-		}
-		
-		// Parameters
-		// Camera FOV-y, Near Plane and Far Plane
-		const float fov = glm::radians(45.0f);
-		const float n = 0.1f;
-		const float f = 100.0f;
-		const float ROT_SPEED = glm::radians(90.0f);
-		const float MOVE_SPEED = 1.0f;
-		const float minPitch = glm::radians(-60.0f);
-		const float maxPitch = glm::radians(60.0f);
-
-		alpha += ROT_SPEED * (-r.y) * deltaT;
-		beta += ROT_SPEED * (-r.x) * deltaT;
-		beta = glm::clamp(beta,minPitch,maxPitch);
-		rho += ROT_SPEED * r.z * deltaT;
-
-		glm::vec3 ux = glm::vec3(glm::rotate(glm::mat4(1),alpha,glm::vec3(0,1,0)) * glm::vec4(1,0,0,1));
-		glm::vec3 uy = glm::vec3(0,1,0);
-		glm::vec3 uz = glm::vec3(glm::rotate(glm::mat4(1),alpha, glm::vec3(0,1,0)) * glm::vec4(0,0,-1,1));
-		camPos -= ux * MOVE_SPEED * m.x * deltaT;
-		camPos -= uz * MOVE_SPEED * m.z * deltaT;
-				
-		glm::mat4 Prj = glm::perspective(fov, Ar, n, f);
-		Prj[1][1] *= -1;
-		
-		glm::mat4 View = glm::rotate(glm::mat4(1.0), -beta, glm::vec3(1,0,0)) *
-						 glm::rotate(glm::mat4(1.0), -alpha, glm::vec3(0,1,0)) *
-						 glm::translate(glm::mat4(1.0), camPos);
-
-
+		//Update Gubo
 		gubo.DlightDir = glm::normalize(glm::vec3(1, 2, 3));
 		gubo.DlightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 		gubo.AmbLightColor = glm::vec3(0.1f);
 		gubo.eyePos = camPos;
-
-		// Writes value to the GPU
 		DSGubo.map(currentImage, &gubo, sizeof(gubo), 0);
-		// the .map() method of a DataSet object, requires the current image of the swap chain as first parameter
-		// the second parameter is the pointer to the C++ data structure to transfer to the GPU
-		// the third parameter is its size
-		// the fourth parameter is the location inside the descriptor set of this uniform block
 
-		glm::mat4 World = glm::mat4(1);		
-		uboTest.amb = 1.0f; uboTest.gamma = 180.0f; uboTest.sColor = glm::vec3(1.0f);
-		uboTest.mvpMat = Prj * View * World;
-		uboTest.mMat = World;
-		uboTest.nMat = glm::inverse(glm::transpose(World)); //DONE
-		DSTest.map(currentImage, &uboTest, sizeof(uboTest), 0); //DONE
+		
+		switch(currentScene){
+			case 0: //Start Menu
+				uboMenu.visible = 1.0f;
+				DSMenu.map(currentImage, &uboMenu, sizeof(uboMenu), 0);
+				break;
+			case 1: //Level 1
+				uboMenu.visible = 0.0f;
+				DSMenu.map(currentImage, &uboMenu, sizeof(uboMenu), 0);
+
+				glm::mat4 World = glm::mat4(1);		
+				uboTest.amb = 1.0f; uboTest.gamma = 180.0f; uboTest.sColor = glm::vec3(1.0f);
+				uboTest.mvpMat = Prj * View * World;
+				uboTest.mMat = World;
+				uboTest.nMat = glm::inverse(glm::transpose(World));
+				DSTest.map(currentImage, &uboTest, sizeof(uboTest), 0);
+				break;
+		}	
 	}	
 };
 
+#include "GameLogic.hpp"
 
 // This is the main: probably you do not need to touch this!
 int main() {
