@@ -47,8 +47,10 @@ struct VertexVColor {
 };
 
 
+
 class Project;
 void GameLogic(Project *A, float Ar, glm::mat4 &View, glm::mat4 &Prj, glm::vec3 &camPos, int &currentScene);
+void checkCollision(glm::mat4 &View, glm::mat4 &Prj, Model<VertexMesh> &Obj);
 
 // MAIN ! 
 class Project : public BaseProject {
@@ -56,6 +58,7 @@ class Project : public BaseProject {
 
 	// Current aspect ratio (used by the callback that resized the window
 	float Ar;
+	float currW,currH;
 
 	// Descriptor Layouts ["classes" of what will be passed to the shaders]
 	DescriptorSetLayout DSLGubo, DSLMesh, DSLOverlay, DSLVColor;
@@ -74,13 +77,14 @@ class Project : public BaseProject {
 	// Please note that Model objects depends on the corresponding vertex structure
 	Model<VertexVColor> MTest;
 	Model<VertexOverlay> MMenu, MCrosshair;
+	Model<VertexMesh> MBarrel;
 
-	DescriptorSet DSGubo, DSTest, DSMenu, DSCrosshair;
+	DescriptorSet DSGubo, DSTest, DSMenu, DSCrosshair, DSBarrel;
 
-	Texture TMenu, TCrosshair;
+	Texture TMenu, TCrosshair, TVarious;
  	
 	// C++ storage for uniform variables
-	MeshUniformBlock uboTest;
+	MeshUniformBlock uboTest, uboBarrel;
 	GlobalUniformBlock gubo;
 	OverlayUniformBlock uboMenu, uboCrosshair;
 
@@ -91,21 +95,25 @@ class Project : public BaseProject {
 	void setWindowParameters() {
 		// window size, titile and initial background
 		windowWidth = 800;
+		currW = windowWidth;
 		windowHeight = 600;
+		currH = windowHeight;
 		windowTitle = "PROJECT";
     	windowResizable = GLFW_TRUE;
 		initialBackgroundColor = {0.0f, 0.005f, 0.01f, 1.0f};
 		
 		// Descriptor pool sizes
-		uniformBlocksInPool = 3;
-		texturesInPool = 1;
-		setsInPool = 3;
+		uniformBlocksInPool = 5;
+		texturesInPool = 3;
+		setsInPool = 5;
 		
 		Ar = (float)windowWidth / (float)windowHeight;
 	}
 	
 	// What to do when the window changes size
 	void onWindowResize(int w, int h) {
+		currW = w;
+		currH = h;
 		Ar = (float)w / (float)h;
 	}
 	
@@ -204,12 +212,13 @@ class Project : public BaseProject {
 		PMesh.init(this, &VMesh, "shaders/MeshVert.spv", "shaders/MeshFrag.spv", {&DSLGubo, &DSLMesh});
 		POverlay.init(this, &VOverlay, "shaders/OverlayVert.spv", "shaders/OverlayFrag.spv", {&DSLOverlay});
 		POverlay.setAdvancedFeatures(VK_COMPARE_OP_ALWAYS, VK_POLYGON_MODE_FILL,
- 								    VK_CULL_MODE_NONE, false);
+ 								    VK_CULL_MODE_NONE, true);
 		PVColor.init(this, &VVColor, "shaders/VColorVert.spv","shaders/VColorFrag.spv", {&DSLGubo, &DSLVColor});
 		PVColor.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
  								    VK_CULL_MODE_NONE, true);
 
 
+		
 		// Models, textures and Descriptors (values assigned to the uniforms)
 		// Create models
 		MTest.vertices.push_back({{0.0f,0.0f,0.0f},{0.0f,1.0f,0.0f},{255.0f,255.0f,255.0f}});
@@ -220,21 +229,31 @@ class Project : public BaseProject {
 		MTest.indices.push_back(1); MTest.indices.push_back(2); MTest.indices.push_back(3);
 		MTest.initMesh(this, &VVColor); 
 
-
 		MMenu.vertices.push_back({{-1.0f,-1.0f},{0.0f,0.0f}});
 		MMenu.vertices.push_back({{-1.0f,1.0f},{0.0f,1.0f}});	
 		MMenu.vertices.push_back({{1.0f,-1.0f},{1.0f,0.0f}});	
 		MMenu.vertices.push_back({{1.0f,1.0f},{1.0f,1.0f}});	
 		MMenu.indices.push_back(0); MMenu.indices.push_back(1); MMenu.indices.push_back(2); 
 		MMenu.indices.push_back(1); MMenu.indices.push_back(2); MMenu.indices.push_back(3);
-		MMenu.initMesh(this, &VOverlay);		
-		
+		MMenu.initMesh(this, &VOverlay);
+
+		MCrosshair.vertices.push_back({{-0.1f,-0.1f},{0.0f,0.0f}});
+		MCrosshair.vertices.push_back({{-0.1f,0.1f},{0.0f,1.0f}});	
+		MCrosshair.vertices.push_back({{0.1f,-0.1f},{1.0f,0.0f}});	
+		MCrosshair.vertices.push_back({{0.1f,0.1f},{1.0f,1.0f}});
+		MCrosshair.indices.push_back(0); MCrosshair.indices.push_back(1); MCrosshair.indices.push_back(2);
+		MCrosshair.indices.push_back(1); MCrosshair.indices.push_back(2); MCrosshair.indices.push_back(3);
+		MCrosshair.initMesh(this, &VOverlay);
+
+		MBarrel.init(this, &VMesh, "models/barrel.001.mgcg", MGCG);
+
 		// Create the textures
 		TMenu.init(this, "textures/Menu.png");
+		TCrosshair.init(this, "textures/Crosshair.png");
+		TVarious.init(this, "textures/Textures_Food.png");
 		
 		// Init local variables
-		camPos = glm::vec3(0.0f, -1.0f, 0.0f);
-		
+		camPos = glm::vec3(0.0f, 0.0f, 0.0f);		
 	}
 	
 	// Here you create your pipelines and Descriptor Sets!
@@ -252,6 +271,14 @@ class Project : public BaseProject {
 					{0, UNIFORM, sizeof(OverlayUniformBlock), nullptr},
 					{1, TEXTURE, 0, &TMenu}
 				});
+		DSCrosshair.init(this, &DSLOverlay, {
+					{0, UNIFORM, sizeof(OverlayUniformBlock), nullptr},
+					{1, TEXTURE, 0, &TCrosshair}
+				});
+		DSBarrel.init(this, &DSLMesh, {
+					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
+					{1, TEXTURE, 0, &TVarious}
+				});				
 		DSGubo.init(this, &DSLGubo, {
 					{0, UNIFORM, sizeof(GlobalUniformBlock), nullptr}
 				});
@@ -268,6 +295,8 @@ class Project : public BaseProject {
 		// Cleanup datasets
 		DSTest.cleanup();
 		DSMenu.cleanup();
+		DSCrosshair.cleanup();
+		DSBarrel.cleanup();
 		DSGubo.cleanup();
 	}
 
@@ -278,10 +307,14 @@ class Project : public BaseProject {
 	void localCleanup() {
 		// Cleanup textures
 		TMenu.cleanup();
+		TCrosshair.cleanup();
+		TVarious.cleanup();
 
 		// Cleanup models
 		MTest.cleanup();
 		MMenu.cleanup();
+		MCrosshair.cleanup();
+		MBarrel.cleanup();
 		
 		// Cleanup descriptor set layouts
 		DSLMesh.cleanup();
@@ -307,13 +340,26 @@ class Project : public BaseProject {
 				vkCmdDrawIndexed(commandBuffer,
 					static_cast<uint32_t>(MMenu.indices.size()),1,0,0,0);
 				break;
-			case 1:	
+			case 1:
+				DSGubo.bind(commandBuffer, PMesh, 0, currentImage);
+				PMesh.bind(commandBuffer);
+				MBarrel.bind(commandBuffer);
+				DSBarrel.bind(commandBuffer, PMesh, 1, currentImage);
+				vkCmdDrawIndexed(commandBuffer,
+					static_cast<uint32_t>(MBarrel.indices.size()), 1, 0, 0, 0);
+
 				DSGubo.bind(commandBuffer,PVColor,0,currentImage);
 				PVColor.bind(commandBuffer);			
 				MTest.bind(commandBuffer);
 				DSTest.bind(commandBuffer,PVColor,1,currentImage);
 				vkCmdDrawIndexed(commandBuffer,
 					static_cast<uint32_t>(MTest.indices.size()),1,0,0,0);
+
+				POverlay.bind(commandBuffer);
+				MCrosshair.bind(commandBuffer);
+				DSCrosshair.bind(commandBuffer,POverlay,0,currentImage);
+				vkCmdDrawIndexed(commandBuffer,
+					static_cast<uint32_t>(MCrosshair.indices.size()),1,0,0,0);
 				break;
 		}
 	}
@@ -329,6 +375,46 @@ class Project : public BaseProject {
 		glm::mat4 Prj;
 		GameLogic(this, Ar, View, Prj, camPos, currentScene);
 
+
+		glm::vec4 viewport = glm::vec4(0.0f,0.0f,currW,currH);
+		glm::vec3 rayStart = glm::unProject(glm::vec3(currW/2, currH/2, 0.0f), View, Prj, viewport);
+		glm::vec3 rayEnd = glm::unProject(glm::vec3(currW/2, currH/2, 1.0f), View, Prj, viewport);
+		glm::vec3 rayDir = glm::normalize(rayEnd-rayStart);
+
+		glm::mat4 W = glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f,0.0f,-2.0f)),
+									0.0f, glm::vec3(1,0,0));
+		glm::vec3 minVector = glm::vec3(std::numeric_limits<float>::max());
+    	glm::vec3 maxVector = glm::vec3(-std::numeric_limits<float>::max());
+
+		for(int i=0; i<MBarrel.vertices.size(); i++){   
+        	glm::vec3 vertexPosition = MBarrel.vertices[i].pos;			
+        	minVector = glm::min(minVector, vertexPosition);
+        	maxVector = glm::max(maxVector, vertexPosition);        
+    	}
+		minVector=glm::vec3(W * glm::vec4(minVector,1.0));
+		maxVector=glm::vec3(W * glm::vec4(maxVector,1.0));
+
+		glm::vec3 invDir = 1.0f/rayDir;
+		glm::vec3 tMin = (minVector - rayStart) * invDir;
+    	glm::vec3 tMax = (maxVector - rayStart) * invDir;
+
+		glm::vec3 t1 = glm::min(tMin, tMax);
+    	glm::vec3 t2 = glm::max(tMin, tMax);
+    	float tNear = glm::max(glm::max(t1.x, t1.y), t1.z);
+    	float tFar = glm::min(glm::min(t2.x, t2.y), t2.z);
+		bool check = (tFar>=0 && tNear<=tFar);
+		std::cout<<check<<std::endl;
+    	
+
+
+
+
+
+
+
+
+
+
 		//Update Gubo
 		gubo.DlightDir = glm::normalize(glm::vec3(1, 2, 3));
 		gubo.DlightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
@@ -343,15 +429,25 @@ class Project : public BaseProject {
 				DSMenu.map(currentImage, &uboMenu, sizeof(uboMenu), 0);
 				break;
 			case 1: //Level 1
-				uboMenu.visible = 0.0f;
-				DSMenu.map(currentImage, &uboMenu, sizeof(uboMenu), 0);
-
 				glm::mat4 World = glm::mat4(1);		
 				uboTest.amb = 1.0f; uboTest.gamma = 180.0f; uboTest.sColor = glm::vec3(1.0f);
 				uboTest.mvpMat = Prj * View * World;
 				uboTest.mMat = World;
 				uboTest.nMat = glm::inverse(glm::transpose(World));
 				DSTest.map(currentImage, &uboTest, sizeof(uboTest), 0);
+
+				World = glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f,0.0f,-2.0f)),
+							0.0f, glm::vec3(1,0,0));
+				uboBarrel.amb = 1.0f; uboBarrel.gamma = 180.0f; uboBarrel.sColor = glm::vec3(1.0f);
+				uboBarrel.mvpMat = Prj * View * World;
+				uboBarrel.mMat = World;
+				uboBarrel.nMat = glm::inverse(glm::transpose(World));
+				DSBarrel.map(currentImage, &uboBarrel, sizeof(uboBarrel), 0);
+
+				uboCrosshair.visible = 1.0f;
+				DSCrosshair.map(currentImage, &uboCrosshair, sizeof(uboCrosshair), 0);
+
+				//checkCollision(View, Prj, MBarrel);
 				break;
 		}	
 	}	

@@ -10,7 +10,7 @@ ASSIGN1: MeshLoader.cpp
 ASSIGN2: copy.cpp
 	g++ $(CFLAGS) -Iheaders -o cbin copy.cpp $(LDFLAGS)
 
-.PHONY: test clean mesh
+.PHONY: test clean mesh copy
 
 test: ASSIGN
 	./bin
