@@ -49,27 +49,32 @@ struct VertexVColor {
 
 //Support structures
 struct ModelData{
-	MeshUniformBlock ubo;
 	glm::vec3 maxVector;
 	glm::vec3 minVector;
 	glm::mat4 world;
+	int scene;
 };
 
 
 class Project;
-void GameLogic(Project *A, float Ar, glm::mat4 &View, glm::mat4 &Prj, glm::vec3 &camPos, int &currentScene);
-void checkCollision(glm::mat4 &View, glm::mat4 &Prj, Model<VertexMesh> &Obj);
+void GameLogic(Project *A);
 ModelData initData(Model<VertexMesh> &Model);
 
 // MAIN ! 
 class Project : public BaseProject {
-	protected:
-
-	// Current aspect ratio (used by the callback that resized the window
-	float Ar;
-	float currW,currH;
+	public:
+	//Support variables
+	int currentScene = 0;
+	bool detect = false;
+	float Ar, currW, currH;
 	glm::vec4 viewport;
+	glm::vec3 camPos;
+	glm::mat4 View, Prj;
+	std::vector<ModelData> playables;
 
+
+
+	protected:
 	// Descriptor Layouts ["classes" of what will be passed to the shaders]
 	DescriptorSetLayout DSLGubo, DSLMesh, DSLOverlay, DSLVColor;
 
@@ -89,8 +94,6 @@ class Project : public BaseProject {
 	Model<VertexOverlay> MMenu, MCrosshair;
 	Model<VertexMesh> MBarrel;
 
-	ModelData Barrel;
-
 	DescriptorSet DSGubo, DSTest, DSMenu, DSCrosshair, DSBarrel;
 
 	Texture TMenu, TCrosshair, TCrosshairAlt, TVarious;
@@ -100,8 +103,6 @@ class Project : public BaseProject {
 	GlobalUniformBlock gubo;
 	OverlayUniformBlock uboMenu, uboCrosshair;
 
-	glm::vec3 camPos;
-	int currentScene = 0;
 
 	// Here you set the main application parameters
 	void setWindowParameters() {
@@ -260,10 +261,13 @@ class Project : public BaseProject {
 		MCrosshair.initMesh(this, &VOverlay);
 
 		MBarrel.init(this, &VMesh, "models/barrel.001.mgcg", MGCG);
-		Barrel = initData(MBarrel);
+		ModelData Barrel = initData(MBarrel);
+		Barrel.scene = 1; 
+		Barrel.world = glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f,0.0f,-2.0f)),
+													0.0f, glm::vec3(1,0,0));
+		playables.push_back(Barrel);
 
 		
-
 		// Create the textures
 		TMenu.init(this, "textures/Menu.png");
 		TCrosshair.init(this, "textures/Crosshair.png");
@@ -396,32 +400,17 @@ class Project : public BaseProject {
 			glfwSetWindowShouldClose(window, GL_TRUE);
 		}
 		
-		glm::mat4 View;
-		glm::mat4 Prj;
+		
 
-		GameLogic(this, Ar, View, Prj, camPos, currentScene);
+		GameLogic(this);
 
 		
-		glm::vec3 rayStart = glm::unProject(glm::vec3(currW/2, currH/2, 0.0f), View, Prj, viewport);
-		glm::vec3 rayEnd = glm::unProject(glm::vec3(currW/2, currH/2, 1.0f), View, Prj, viewport);
-		glm::vec3 rayDir = glm::normalize(rayEnd-rayStart);
+		
 
-
-		Barrel.world= glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f,0.0f,-2.0f)),
+		/*Barrel.world= glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f,0.0f,-2.0f)),
 									0.0f, glm::vec3(1,0,0));
-		glm::vec3 minVector=glm::vec3(Barrel.world * glm::vec4(Barrel.minVector,1.0));
-		glm::vec3 maxVector=glm::vec3(Barrel.world * glm::vec4(Barrel.maxVector,1.0));
 
-		glm::vec3 invDir = 1.0f/rayDir;
-		glm::vec3 tMin = (minVector - rayStart) * invDir;
-    	glm::vec3 tMax = (maxVector - rayStart) * invDir;
-
-		glm::vec3 t1 = glm::min(tMin, tMax);
-    	glm::vec3 t2 = glm::max(tMin, tMax);
-    	float tNear = glm::max(glm::max(t1.x, t1.y), t1.z);
-    	float tFar = glm::min(glm::min(t2.x, t2.y), t2.z);
-		bool check = (tFar>=0 && tNear<=tFar);
-		//std::cout<<check<<std::endl;
+		//std::cout<<check<<std::endl;*/
     	
 
 
@@ -456,7 +445,7 @@ class Project : public BaseProject {
 				DSBarrel.map(currentImage, &uboBarrel, sizeof(uboBarrel), 0);
 
 				uboCrosshair.visible = 1.0f;
-				uboCrosshair.alternative = check;
+				uboCrosshair.alternative = (float)detect;
 				DSCrosshair.map(currentImage, &uboCrosshair, sizeof(uboCrosshair), 0);
 
 				//checkCollision(View, Prj, MBarrel);
