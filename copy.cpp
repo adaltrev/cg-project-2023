@@ -19,6 +19,7 @@ struct MeshUniformBlock {
 
 struct OverlayUniformBlock {
 	alignas(4) float visible;
+	alignas(4) float alternative;
 };
 
 struct GlobalUniformBlock {
@@ -46,11 +47,19 @@ struct VertexVColor {
 	glm::vec3 color;
 };
 
+//Support structures
+struct ModelData{
+	MeshUniformBlock ubo;
+	glm::vec3 maxVector;
+	glm::vec3 minVector;
+	glm::mat4 world;
+};
 
 
 class Project;
 void GameLogic(Project *A, float Ar, glm::mat4 &View, glm::mat4 &Prj, glm::vec3 &camPos, int &currentScene);
 void checkCollision(glm::mat4 &View, glm::mat4 &Prj, Model<VertexMesh> &Obj);
+ModelData initData(Model<VertexMesh> &Model);
 
 // MAIN ! 
 class Project : public BaseProject {
@@ -59,6 +68,7 @@ class Project : public BaseProject {
 	// Current aspect ratio (used by the callback that resized the window
 	float Ar;
 	float currW,currH;
+	glm::vec4 viewport;
 
 	// Descriptor Layouts ["classes" of what will be passed to the shaders]
 	DescriptorSetLayout DSLGubo, DSLMesh, DSLOverlay, DSLVColor;
@@ -75,13 +85,15 @@ class Project : public BaseProject {
 
 	// Models, textures and Descriptors (values assigned to the uniforms)
 	// Please note that Model objects depends on the corresponding vertex structure
-	Model<VertexVColor> MTest;
+	Model<VertexVColor> MTest, MDummy;
 	Model<VertexOverlay> MMenu, MCrosshair;
 	Model<VertexMesh> MBarrel;
 
+	ModelData Barrel;
+
 	DescriptorSet DSGubo, DSTest, DSMenu, DSCrosshair, DSBarrel;
 
-	Texture TMenu, TCrosshair, TVarious;
+	Texture TMenu, TCrosshair, TCrosshairAlt, TVarious;
  	
 	// C++ storage for uniform variables
 	MeshUniformBlock uboTest, uboBarrel;
@@ -104,10 +116,11 @@ class Project : public BaseProject {
 		
 		// Descriptor pool sizes
 		uniformBlocksInPool = 5;
-		texturesInPool = 3;
-		setsInPool = 5;
+		texturesInPool = 5;
+		setsInPool = 6;
 		
 		Ar = (float)windowWidth / (float)windowHeight;
+		viewport = glm::vec4(0.0f,0.0f,currW,currH);
 	}
 	
 	// What to do when the window changes size
@@ -115,6 +128,7 @@ class Project : public BaseProject {
 		currW = w;
 		currH = h;
 		Ar = (float)w / (float)h;
+		viewport = glm::vec4(0.0f,0.0f,currW,currH);
 	}
 	
 	// Here you load and setup all your Vulkan Models and Texutures.
@@ -134,7 +148,8 @@ class Project : public BaseProject {
 				
 		DSLOverlay.init(this, {
 					{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
-					{1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
+					{1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
+					{2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
 				});
 
 		DSLVColor.init(this, {
@@ -144,6 +159,7 @@ class Project : public BaseProject {
 		DSLGubo.init(this, {
 					{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
 				});
+		
 
 
 		// Vertex descriptors
@@ -216,8 +232,6 @@ class Project : public BaseProject {
 		PVColor.init(this, &VVColor, "shaders/VColorVert.spv","shaders/VColorFrag.spv", {&DSLGubo, &DSLVColor});
 		PVColor.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
  								    VK_CULL_MODE_NONE, true);
-
-
 		
 		// Models, textures and Descriptors (values assigned to the uniforms)
 		// Create models
@@ -246,11 +260,16 @@ class Project : public BaseProject {
 		MCrosshair.initMesh(this, &VOverlay);
 
 		MBarrel.init(this, &VMesh, "models/barrel.001.mgcg", MGCG);
+		Barrel = initData(MBarrel);
+
+		
 
 		// Create the textures
 		TMenu.init(this, "textures/Menu.png");
 		TCrosshair.init(this, "textures/Crosshair.png");
+		TCrosshairAlt.init(this, "textures/Crosshair1.png");
 		TVarious.init(this, "textures/Textures_Food.png");
+
 		
 		// Init local variables
 		camPos = glm::vec3(0.0f, 0.0f, 0.0f);		
@@ -258,6 +277,7 @@ class Project : public BaseProject {
 	
 	// Here you create your pipelines and Descriptor Sets!
 	void pipelinesAndDescriptorSetsInit() {
+		std::cout<<"Initializing pipelines and sets...";
 		// This creates a new pipeline (with the current surface), using its shaders
 		PMesh.create();
 		POverlay.create();
@@ -269,19 +289,23 @@ class Project : public BaseProject {
 				});
 		DSMenu.init(this, &DSLOverlay, {
 					{0, UNIFORM, sizeof(OverlayUniformBlock), nullptr},
-					{1, TEXTURE, 0, &TMenu}
+					{1, TEXTURE, 0, &TMenu},
+					{2, TEXTURE, 0, &TMenu}
 				});
 		DSCrosshair.init(this, &DSLOverlay, {
 					{0, UNIFORM, sizeof(OverlayUniformBlock), nullptr},
-					{1, TEXTURE, 0, &TCrosshair}
+					{1, TEXTURE, 0, &TCrosshair},
+					{2, TEXTURE, 0, &TCrosshairAlt}
 				});
 		DSBarrel.init(this, &DSLMesh, {
 					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
 					{1, TEXTURE, 0, &TVarious}
-				});				
+				});			
 		DSGubo.init(this, &DSLGubo, {
 					{0, UNIFORM, sizeof(GlobalUniformBlock), nullptr}
 				});
+
+		std::cout<<"done!"<<std::endl;		
 	}
 
 	// Here you destroy your pipelines and Descriptor Sets!
@@ -308,6 +332,7 @@ class Project : public BaseProject {
 		// Cleanup textures
 		TMenu.cleanup();
 		TCrosshair.cleanup();
+		TCrosshairAlt.cleanup();
 		TVarious.cleanup();
 
 		// Cleanup models
@@ -373,26 +398,19 @@ class Project : public BaseProject {
 		
 		glm::mat4 View;
 		glm::mat4 Prj;
+
 		GameLogic(this, Ar, View, Prj, camPos, currentScene);
 
-
-		glm::vec4 viewport = glm::vec4(0.0f,0.0f,currW,currH);
+		
 		glm::vec3 rayStart = glm::unProject(glm::vec3(currW/2, currH/2, 0.0f), View, Prj, viewport);
 		glm::vec3 rayEnd = glm::unProject(glm::vec3(currW/2, currH/2, 1.0f), View, Prj, viewport);
 		glm::vec3 rayDir = glm::normalize(rayEnd-rayStart);
 
-		glm::mat4 W = glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f,0.0f,-2.0f)),
-									0.0f, glm::vec3(1,0,0));
-		glm::vec3 minVector = glm::vec3(std::numeric_limits<float>::max());
-    	glm::vec3 maxVector = glm::vec3(-std::numeric_limits<float>::max());
 
-		for(int i=0; i<MBarrel.vertices.size(); i++){   
-        	glm::vec3 vertexPosition = MBarrel.vertices[i].pos;			
-        	minVector = glm::min(minVector, vertexPosition);
-        	maxVector = glm::max(maxVector, vertexPosition);        
-    	}
-		minVector=glm::vec3(W * glm::vec4(minVector,1.0));
-		maxVector=glm::vec3(W * glm::vec4(maxVector,1.0));
+		Barrel.world= glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f,0.0f,-2.0f)),
+									0.0f, glm::vec3(1,0,0));
+		glm::vec3 minVector=glm::vec3(Barrel.world * glm::vec4(Barrel.minVector,1.0));
+		glm::vec3 maxVector=glm::vec3(Barrel.world * glm::vec4(Barrel.maxVector,1.0));
 
 		glm::vec3 invDir = 1.0f/rayDir;
 		glm::vec3 tMin = (minVector - rayStart) * invDir;
@@ -403,15 +421,8 @@ class Project : public BaseProject {
     	float tNear = glm::max(glm::max(t1.x, t1.y), t1.z);
     	float tFar = glm::min(glm::min(t2.x, t2.y), t2.z);
 		bool check = (tFar>=0 && tNear<=tFar);
-		std::cout<<check<<std::endl;
+		//std::cout<<check<<std::endl;
     	
-
-
-
-
-
-
-
 
 
 
@@ -445,6 +456,7 @@ class Project : public BaseProject {
 				DSBarrel.map(currentImage, &uboBarrel, sizeof(uboBarrel), 0);
 
 				uboCrosshair.visible = 1.0f;
+				uboCrosshair.alternative = check;
 				DSCrosshair.map(currentImage, &uboCrosshair, sizeof(uboCrosshair), 0);
 
 				//checkCollision(View, Prj, MBarrel);
@@ -467,4 +479,21 @@ int main() {
     }
 
     return EXIT_SUCCESS;
+}
+
+
+ModelData initData(Model<VertexMesh> &Model){
+	ModelData data;
+
+	data.minVector = glm::vec3(std::numeric_limits<float>::max());
+    data.maxVector = glm::vec3(-std::numeric_limits<float>::max());
+	for(int i=0; i<Model.vertices.size(); i++){   
+        	glm::vec3 vertexPosition = Model.vertices[i].pos;			
+        	data.minVector = glm::min(data.minVector, vertexPosition);
+        	data.maxVector = glm::max(data.maxVector, vertexPosition);        
+    }
+
+	data.world = glm::mat4(1);	
+
+	return data;
 }
