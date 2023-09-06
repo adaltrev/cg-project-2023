@@ -4,24 +4,27 @@ LDFLAGS = -lglfw -lvulkan -ldl -lpthread -lX11 -lXxf86vm -lXrandr -lXi
 ASSIGN: main.cpp
 	g++ $(CFLAGS) -Iheaders -o bin main.cpp $(LDFLAGS)
 
-ASSIGN1: MeshLoader.cpp
-	g++ $(CFLAGS) -Iheaders -o mbin MeshLoader.cpp $(LDFLAGS)
-
-ASSIGN2: copy.cpp
+ASSIGN1: copy.cpp
 	g++ $(CFLAGS) -Iheaders -o cbin copy.cpp $(LDFLAGS)
 
-.PHONY: test clean mesh copy
+
+.PHONY: test clean copy shaders
 
 test: ASSIGN
 	./bin
 
-mesh: ASSIGN1
-	./mbin
-
-copy: ASSIGN2
+copy: ASSIGN1
 	./cbin
 
 clean:
 	rm -f bin
-	rm -f mbin
 	rm -f cbin
+
+shaders:
+	glslc shaders/Mesh.frag -o shaders/MeshFrag.spv
+	glslc shaders/Mesh.vert -o shaders/MeshVert.spv
+	glslc shaders/Overlay.frag -o shaders/OverlayFrag.spv
+	glslc shaders/Overlay.vert -o shaders/OverlayVert.spv
+	glslc shaders/VColor.frag -o shaders/VColorFrag.spv
+	glslc shaders/VColor.vert -o shaders/VColorVert.spv
+

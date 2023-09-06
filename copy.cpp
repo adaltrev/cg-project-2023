@@ -9,6 +9,7 @@
 //        mat4  : alignas(16)
 
 struct MeshUniformBlock {
+	alignas(4) float visible;
 	alignas(4) float amb;
 	alignas(4) float gamma;
 	alignas(16) glm::vec3 sColor;
@@ -48,34 +49,36 @@ struct VertexVColor {
 };
 
 //Support structures
-struct ModelData{
-	glm::vec3 maxVector;
-	glm::vec3 minVector;
-	glm::mat4 world;
+struct PlayerData{
 	int scene;
+	glm::vec3 maxVector, minVector;
+	glm::vec3 maxVectorWorld, minVectorWorld;
+	glm::vec3 angles;
+	MeshUniformBlock ubo;
 };
 
 
 class Project;
 void GameLogic(Project *A);
-ModelData initData(Model<VertexMesh> &Model);
+PlayerData initData(Model<VertexMesh> &Model, int scene, glm::mat4 world);
 
 // MAIN ! 
 class Project : public BaseProject {
 	public:
 	//Support variables
 	int currentScene = 0;
+	int currentPlayer = 1;
 	bool detect = false;
 	float Ar, currW, currH;
 	glm::vec4 viewport;
-	glm::vec3 camPos;
+	glm::vec3 camPos = glm::vec3(0.0f, 0.0f, 0.0f);	
 	glm::mat4 View, Prj;
-	std::vector<ModelData> playables;
+	std::vector<PlayerData> playables;
 
 
 
 	protected:
-	// Descriptor Layouts ["classes" of what will be passed to the shaders]
+	// Descriptor Layouts
 	DescriptorSetLayout DSLGubo, DSLMesh, DSLOverlay, DSLVColor;
 
 	// Vertex formats
@@ -83,30 +86,29 @@ class Project : public BaseProject {
 	VertexDescriptor VOverlay;
 	VertexDescriptor VVColor;
 
-	// Pipelines [Shader couples]
+	// Pipelines
 	Pipeline PMesh;
 	Pipeline POverlay;
 	Pipeline PVColor;
 
-	// Models, textures and Descriptors (values assigned to the uniforms)
-	// Please note that Model objects depends on the corresponding vertex structure
-	Model<VertexVColor> MTest, MDummy;
+	// Models, textures and Descriptors
+	Model<VertexVColor> MTest;
 	Model<VertexOverlay> MMenu, MCrosshair;
-	Model<VertexMesh> MBarrel;
+	Model<VertexMesh> MBarrel, MBarrel1;
 
-	DescriptorSet DSGubo, DSTest, DSMenu, DSCrosshair, DSBarrel;
+	DescriptorSet DSGubo, DSTest, DSMenu, DSCrosshair, DSBarrel, DSBarrel1;
 
 	Texture TMenu, TCrosshair, TCrosshairAlt, TVarious;
  	
 	// C++ storage for uniform variables
-	MeshUniformBlock uboTest, uboBarrel;
+	MeshUniformBlock uboTest;
 	GlobalUniformBlock gubo;
 	OverlayUniformBlock uboMenu, uboCrosshair;
 
 
-	// Here you set the main application parameters
+	//Main application parameters
 	void setWindowParameters() {
-		// window size, titile and initial background
+		//Window size, title and initial background
 		windowWidth = 800;
 		currW = windowWidth;
 		windowHeight = 600;
@@ -115,10 +117,10 @@ class Project : public BaseProject {
     	windowResizable = GLFW_TRUE;
 		initialBackgroundColor = {0.0f, 0.005f, 0.01f, 1.0f};
 		
-		// Descriptor pool sizes
-		uniformBlocksInPool = 5;
-		texturesInPool = 5;
-		setsInPool = 6;
+		//Descriptor pool sizes
+		uniformBlocksInPool = 7;
+		texturesInPool = 6;
+		setsInPool = 8;
 		
 		Ar = (float)windowWidth / (float)windowHeight;
 		viewport = glm::vec4(0.0f,0.0f,currW,currH);
@@ -252,20 +254,26 @@ class Project : public BaseProject {
 		MMenu.indices.push_back(1); MMenu.indices.push_back(2); MMenu.indices.push_back(3);
 		MMenu.initMesh(this, &VOverlay);
 
-		MCrosshair.vertices.push_back({{-0.1f,-0.1f},{0.0f,0.0f}});
-		MCrosshair.vertices.push_back({{-0.1f,0.1f},{0.0f,1.0f}});	
-		MCrosshair.vertices.push_back({{0.1f,-0.1f},{1.0f,0.0f}});	
-		MCrosshair.vertices.push_back({{0.1f,0.1f},{1.0f,1.0f}});
+		MCrosshair.vertices.push_back({{-0.075f,-0.1f},{0.0f,0.0f}});
+		MCrosshair.vertices.push_back({{-0.075f,0.1f},{0.0f,1.0f}});	
+		MCrosshair.vertices.push_back({{0.075f,-0.1f},{1.0f,0.0f}});	
+		MCrosshair.vertices.push_back({{0.075f,0.1f},{1.0f,1.0f}});
 		MCrosshair.indices.push_back(0); MCrosshair.indices.push_back(1); MCrosshair.indices.push_back(2);
 		MCrosshair.indices.push_back(1); MCrosshair.indices.push_back(2); MCrosshair.indices.push_back(3);
 		MCrosshair.initMesh(this, &VOverlay);
 
+		//Create Playable models
+		//Player 0
 		MBarrel.init(this, &VMesh, "models/barrel.001.mgcg", MGCG);
-		ModelData Barrel = initData(MBarrel);
-		Barrel.scene = 1; 
-		Barrel.world = glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f,0.0f,-2.0f)),
+		glm::mat4 W = glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(5.0f,1.0f,5.0f)),
 													0.0f, glm::vec3(1,0,0));
-		playables.push_back(Barrel);
+		playables.push_back(initData(MBarrel,1,W));
+
+		//Player 1
+		MBarrel1.init(this, &VMesh, "models/barrel.001.mgcg", MGCG);
+		playables.push_back(initData(MBarrel1,1,glm::mat4(1)));
+		playables[1].ubo.visible = 0.0f;
+		
 
 		
 		// Create the textures
@@ -273,10 +281,6 @@ class Project : public BaseProject {
 		TCrosshair.init(this, "textures/Crosshair.png");
 		TCrosshairAlt.init(this, "textures/Crosshair1.png");
 		TVarious.init(this, "textures/Textures_Food.png");
-
-		
-		// Init local variables
-		camPos = glm::vec3(0.0f, 0.0f, 0.0f);		
 	}
 	
 	// Here you create your pipelines and Descriptor Sets!
@@ -304,7 +308,11 @@ class Project : public BaseProject {
 		DSBarrel.init(this, &DSLMesh, {
 					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
 					{1, TEXTURE, 0, &TVarious}
-				});			
+				});
+		DSBarrel1.init(this, &DSLMesh, {
+					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
+					{1, TEXTURE, 0, &TVarious}
+		});					
 		DSGubo.init(this, &DSLGubo, {
 					{0, UNIFORM, sizeof(GlobalUniformBlock), nullptr}
 				});
@@ -325,6 +333,7 @@ class Project : public BaseProject {
 		DSMenu.cleanup();
 		DSCrosshair.cleanup();
 		DSBarrel.cleanup();
+		DSBarrel1.cleanup();
 		DSGubo.cleanup();
 	}
 
@@ -344,6 +353,7 @@ class Project : public BaseProject {
 		MMenu.cleanup();
 		MCrosshair.cleanup();
 		MBarrel.cleanup();
+		MBarrel1.cleanup();
 		
 		// Cleanup descriptor set layouts
 		DSLMesh.cleanup();
@@ -376,6 +386,11 @@ class Project : public BaseProject {
 				DSBarrel.bind(commandBuffer, PMesh, 1, currentImage);
 				vkCmdDrawIndexed(commandBuffer,
 					static_cast<uint32_t>(MBarrel.indices.size()), 1, 0, 0, 0);
+				MBarrel1.bind(commandBuffer);
+				DSBarrel1.bind(commandBuffer, PMesh, 1, currentImage);
+				vkCmdDrawIndexed(commandBuffer,
+					static_cast<uint32_t>(MBarrel1.indices.size()), 1, 0, 0, 0);
+
 
 				DSGubo.bind(commandBuffer,PVColor,0,currentImage);
 				PVColor.bind(commandBuffer);			
@@ -400,20 +415,7 @@ class Project : public BaseProject {
 			glfwSetWindowShouldClose(window, GL_TRUE);
 		}
 		
-		
-
 		GameLogic(this);
-
-		
-		
-
-		/*Barrel.world= glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f,0.0f,-2.0f)),
-									0.0f, glm::vec3(1,0,0));
-
-		//std::cout<<check<<std::endl;*/
-    	
-
-
 
 		//Update Gubo
 		gubo.DlightDir = glm::normalize(glm::vec3(1, 2, 3));
@@ -429,20 +431,23 @@ class Project : public BaseProject {
 				DSMenu.map(currentImage, &uboMenu, sizeof(uboMenu), 0);
 				break;
 			case 1: //Level 1
-				glm::mat4 World = glm::mat4(1);		
+				glm::mat4 World = glm::mat4(1);	
+				uboTest.visible = 1.0f;	
 				uboTest.amb = 1.0f; uboTest.gamma = 180.0f; uboTest.sColor = glm::vec3(1.0f);
 				uboTest.mvpMat = Prj * View * World;
 				uboTest.mMat = World;
 				uboTest.nMat = glm::inverse(glm::transpose(World));
 				DSTest.map(currentImage, &uboTest, sizeof(uboTest), 0);
+				
+				playables[0].ubo.amb = 1.0f; playables[0].ubo.gamma = 180.0f; playables[0].ubo.sColor = glm::vec3(1.0f);
+				playables[0].ubo.mvpMat = Prj * View * playables[0].ubo.mMat;
+				playables[0].ubo.nMat = glm::inverse(glm::transpose(playables[0].ubo.mMat));
+				DSBarrel.map(currentImage, &playables[0].ubo, sizeof(playables[0].ubo), 0);
 
-				World = glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f,0.0f,-2.0f)),
-							0.0f, glm::vec3(1,0,0));
-				uboBarrel.amb = 1.0f; uboBarrel.gamma = 180.0f; uboBarrel.sColor = glm::vec3(1.0f);
-				uboBarrel.mvpMat = Prj * View * World;
-				uboBarrel.mMat = World;
-				uboBarrel.nMat = glm::inverse(glm::transpose(World));
-				DSBarrel.map(currentImage, &uboBarrel, sizeof(uboBarrel), 0);
+				playables[1].ubo.amb = 1.0f; playables[1].ubo.gamma = 180.0f; playables[1].ubo.sColor = glm::vec3(1.0f);
+				playables[1].ubo.mvpMat = Prj * View * playables[1].ubo.mMat;
+				playables[1].ubo.nMat = glm::inverse(glm::transpose(playables[1].ubo.mMat));
+				DSBarrel1.map(currentImage, &playables[1].ubo, sizeof(playables[1].ubo), 0);
 
 				uboCrosshair.visible = 1.0f;
 				uboCrosshair.alternative = (float)detect;
@@ -466,13 +471,15 @@ int main() {
         std::cerr << e.what() << std::endl;
         return EXIT_FAILURE;
     }
-
     return EXIT_SUCCESS;
 }
 
 
-ModelData initData(Model<VertexMesh> &Model){
-	ModelData data;
+//Set initial parameters for playable model
+PlayerData initData(Model<VertexMesh> &Model, int scene, glm::mat4 world){
+	PlayerData data;
+
+	data.scene = scene;
 
 	data.minVector = glm::vec3(std::numeric_limits<float>::max());
     data.maxVector = glm::vec3(-std::numeric_limits<float>::max());
@@ -482,7 +489,12 @@ ModelData initData(Model<VertexMesh> &Model){
         	data.maxVector = glm::max(data.maxVector, vertexPosition);        
     }
 
-	data.world = glm::mat4(1);	
+	data.ubo.mMat = world;
+	data.minVectorWorld=glm::vec3(data.ubo.mMat * glm::vec4(data.minVector,1.0));
+	data.maxVectorWorld=glm::vec3(data.ubo.mMat * glm::vec4(data.maxVector,1.0));
+	
+	data.ubo.visible = 1.0f;
+	data.angles = glm::vec3(0.0,0.0,0.0);	
 
 	return data;
 }

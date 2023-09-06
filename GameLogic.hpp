@@ -5,13 +5,13 @@ const float ROT_SPEED = glm::radians(90.0f);
 const float MOVE_SPEED = 1.0f;
 const float minPitch = glm::radians(-60.0f);
 const float maxPitch = glm::radians(60.0f);
-const float EPSILON = 1e-6f;
 
 
 void GameLogic(Project *A){
     static float alpha = 0.0f;
     static float beta = 0.0f;
     static float rho = 0.0f;
+    static int pointing;
 
     //Get input
     float deltaT;
@@ -55,44 +55,62 @@ void GameLogic(Project *A){
 		glm::vec3 rayDir = glm::normalize(rayEnd-rayStart);
         glm::vec3 invDir = 1.0f/rayDir;
 
-        //Check crosshair detection for all valid objects in the scene, with AABB
+        //Check crosshair detection for all valid objects in the scene, with AABB (except current one)
         A->detect = false;
+        pointing = -1;      
         for(int i=0;i<A->playables.size();i++){
-            ModelData model = A->playables[i];
-            if(model.scene==currentScene){
-                glm::vec3 minVector=glm::vec3(model.world * glm::vec4(model.minVector,1.0));
-		        glm::vec3 maxVector=glm::vec3(model.world * glm::vec4(model.maxVector,1.0));
+            if(i!=A->currentPlayer && A->playables[i].scene==currentScene){
+                PlayerData model = A->playables[i];
 
-                glm::vec3 tMin = (minVector - rayStart) * invDir;
-                glm::vec3 tMax = (maxVector - rayStart) * invDir;
+                glm::vec3 tMin = (model.minVectorWorld - rayStart) * invDir;
+                glm::vec3 tMax = (model.maxVectorWorld - rayStart) * invDir;
                 glm::vec3 t1 = glm::min(tMin, tMax);
                 glm::vec3 t2 = glm::max(tMin, tMax);
                 float tNear = glm::max(glm::max(t1.x, t1.y), t1.z);
                 float tFar = glm::min(glm::min(t2.x, t2.y), t2.z);
-                
+
                 if (tFar>=0 && tNear<=tFar){
                     A->detect = true;
+                    pointing = i;
                     break;
                 }
             }
         }
+
+        //"Mind Transfer" between playable models
+        if(handleFire) {
+            if(A->detect){
+                //Place current model in camera position, with camera angles
+                A->playables[A->currentPlayer].ubo.visible = 1.0f;
+                A->playables[A->currentPlayer].ubo.mMat = glm::translate(glm::mat4(1.0f), A->camPos)
+                        * glm::rotate(glm::mat4(1.0f), beta, glm::vec3(0.0f, 1.0f, 0.0f));
+                A->playables[A->currentPlayer].minVectorWorld=glm::vec3(A->playables[A->currentPlayer].ubo.mMat 
+                        * glm::vec4(A->playables[A->currentPlayer].minVector,1.0));
+	            A->playables[A->currentPlayer].maxVectorWorld=glm::vec3(A->playables[A->currentPlayer].ubo.mMat 
+                        * glm::vec4(A->playables[A->currentPlayer].maxVector,1.0));      
+                A->playables[A->currentPlayer].angles = glm::vec3(alpha,beta,rho);
+
+                //Update camera position and angles using the new model's world matrix
+                A->playables[pointing].ubo.visible = 0.0f;
+                glm::mat4 W = A->playables[pointing].ubo.mMat;
+                A->camPos= glm::vec3(W[3]);
+
+                alpha =  A->playables[pointing].angles.x;
+                beta =  A->playables[pointing].angles.y;
+                rho =  A->playables[pointing].angles.z;
+                                
+                A->currentPlayer = pointing;                
+            }            
+        } 
     }
 
-    //State machine    
-    switch(A->currentScene) {		
-        case 0: //Start Menu
-            if(handleFire) {
+    //Change scene form start menu to Level 1
+    else{
+        if(handleFire) {
                 A->currentScene = 1;
                 A->RebuildPipeline();	
-            }
-        break;        
-        case 1: //Level 1
-            if(handleFire) {
-                A->currentScene = 0;
-                A->RebuildPipeline();		
-            } 
-        break;
-    }    
+        }
+    }  
 }
 
 
