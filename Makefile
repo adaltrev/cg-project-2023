@@ -27,4 +27,3 @@ shaders:
 	glslc shaders/Overlay.vert -o shaders/OverlayVert.spv
 	glslc shaders/VColor.frag -o shaders/VColorFrag.spv
 	glslc shaders/VColor.vert -o shaders/VColorVert.spv
-

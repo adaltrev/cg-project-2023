@@ -80,24 +80,28 @@ void GameLogic(Project *A){
         //"Mind Transfer" between playable models
         if(handleFire) {
             if(A->detect){
-                //Place current model in camera position, with camera angles
-                A->playables[A->currentPlayer].ubo.visible = 1.0f;
-                A->playables[A->currentPlayer].ubo.mMat = glm::translate(glm::mat4(1.0f), A->camPos)
+                PlayerData model = A->playables[A->currentPlayer];
+                PlayerData target = A->playables[pointing];
+
+                //Place current model in camera position, with camera angles. Update uniforms
+                model.ubo.visible = 1.0f;
+                model.ubo.mMat = glm::translate(glm::mat4(1.0f), A->camPos)
                         * glm::rotate(glm::mat4(1.0f), beta, glm::vec3(0.0f, 1.0f, 0.0f));
-                A->playables[A->currentPlayer].minVectorWorld=glm::vec3(A->playables[A->currentPlayer].ubo.mMat 
-                        * glm::vec4(A->playables[A->currentPlayer].minVector,1.0));
-	            A->playables[A->currentPlayer].maxVectorWorld=glm::vec3(A->playables[A->currentPlayer].ubo.mMat 
-                        * glm::vec4(A->playables[A->currentPlayer].maxVector,1.0));      
-                A->playables[A->currentPlayer].angles = glm::vec3(alpha,beta,rho);
+                model.ubo.nMat = glm::inverse(glm::transpose(model.ubo.mMat));
+                model.minVectorWorld=glm::vec3(model.ubo.mMat 
+                        * glm::vec4(model.minVector,1.0));
+	            model.maxVectorWorld=glm::vec3(model.ubo.mMat 
+                        * glm::vec4(model.maxVector,1.0));      
+                model.angles = glm::vec3(alpha,beta,rho);
+                
 
                 //Update camera position and angles using the new model's world matrix
-                A->playables[pointing].ubo.visible = 0.0f;
-                glm::mat4 W = A->playables[pointing].ubo.mMat;
+                target.ubo.visible = 0.0f;
+                glm::mat4 W = target.ubo.mMat;
                 A->camPos= glm::vec3(W[3]);
-
-                alpha =  A->playables[pointing].angles.x;
-                beta =  A->playables[pointing].angles.y;
-                rho =  A->playables[pointing].angles.z;
+                alpha = target.angles.x;
+                beta = target.angles.y;
+                rho = target.angles.z;
                                 
                 A->currentPlayer = pointing;                
             }            
@@ -112,7 +116,3 @@ void GameLogic(Project *A){
         }
     }  
 }
-
-
-
-

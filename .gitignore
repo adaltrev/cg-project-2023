@@ -1,7 +1,4 @@
-
-mbin
 bin
 cbin
+*.spv
 
-*.spv
-*.spv

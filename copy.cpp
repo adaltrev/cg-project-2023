@@ -424,13 +424,13 @@ class Project : public BaseProject {
 		gubo.eyePos = camPos;
 		DSGubo.map(currentImage, &gubo, sizeof(gubo), 0);
 
-		
+		//Update uniforms for all object, based on the current scene
 		switch(currentScene){
 			case 0: //Start Menu
 				uboMenu.visible = 1.0f;
 				DSMenu.map(currentImage, &uboMenu, sizeof(uboMenu), 0);
 				break;
-			case 1: //Level 1
+			case 1: //Level 1			
 				glm::mat4 World = glm::mat4(1);	
 				uboTest.visible = 1.0f;	
 				uboTest.amb = 1.0f; uboTest.gamma = 180.0f; uboTest.sColor = glm::vec3(1.0f);
@@ -439,21 +439,16 @@ class Project : public BaseProject {
 				uboTest.nMat = glm::inverse(glm::transpose(World));
 				DSTest.map(currentImage, &uboTest, sizeof(uboTest), 0);
 				
-				playables[0].ubo.amb = 1.0f; playables[0].ubo.gamma = 180.0f; playables[0].ubo.sColor = glm::vec3(1.0f);
 				playables[0].ubo.mvpMat = Prj * View * playables[0].ubo.mMat;
-				playables[0].ubo.nMat = glm::inverse(glm::transpose(playables[0].ubo.mMat));
 				DSBarrel.map(currentImage, &playables[0].ubo, sizeof(playables[0].ubo), 0);
 
-				playables[1].ubo.amb = 1.0f; playables[1].ubo.gamma = 180.0f; playables[1].ubo.sColor = glm::vec3(1.0f);
 				playables[1].ubo.mvpMat = Prj * View * playables[1].ubo.mMat;
-				playables[1].ubo.nMat = glm::inverse(glm::transpose(playables[1].ubo.mMat));
 				DSBarrel1.map(currentImage, &playables[1].ubo, sizeof(playables[1].ubo), 0);
 
 				uboCrosshair.visible = 1.0f;
 				uboCrosshair.alternative = (float)detect;
 				DSCrosshair.map(currentImage, &uboCrosshair, sizeof(uboCrosshair), 0);
 
-				//checkCollision(View, Prj, MBarrel);
 				break;
 		}	
 	}	
@@ -474,13 +469,14 @@ int main() {
     return EXIT_SUCCESS;
 }
 
-
 //Set initial parameters for playable model
 PlayerData initData(Model<VertexMesh> &Model, int scene, glm::mat4 world){
 	PlayerData data;
 
 	data.scene = scene;
+	data.angles = glm::vec3(0.0,0.0,0.0);
 
+	//Find minimum and maximum vertices for AABB computation
 	data.minVector = glm::vec3(std::numeric_limits<float>::max());
     data.maxVector = glm::vec3(-std::numeric_limits<float>::max());
 	for(int i=0; i<Model.vertices.size(); i++){   
@@ -488,13 +484,15 @@ PlayerData initData(Model<VertexMesh> &Model, int scene, glm::mat4 world){
         	data.minVector = glm::min(data.minVector, vertexPosition);
         	data.maxVector = glm::max(data.maxVector, vertexPosition);        
     }
+	//Transform from local model coords to world coords
+	data.minVectorWorld=glm::vec3(world * glm::vec4(data.minVector,1.0));
+	data.maxVectorWorld=glm::vec3(world * glm::vec4(data.maxVector,1.0));
 
+	//Set initial uniform buffer values
+	data.ubo.amb = 1.0f; data.ubo.gamma = 180.0f; data.ubo.sColor = glm::vec3(1.0f);
 	data.ubo.mMat = world;
-	data.minVectorWorld=glm::vec3(data.ubo.mMat * glm::vec4(data.minVector,1.0));
-	data.maxVectorWorld=glm::vec3(data.ubo.mMat * glm::vec4(data.maxVector,1.0));
-	
+	data.ubo.nMat = glm::inverse(glm::transpose(world));
 	data.ubo.visible = 1.0f;
-	data.angles = glm::vec3(0.0,0.0,0.0);	
 
 	return data;
 }
