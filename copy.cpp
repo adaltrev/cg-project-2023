@@ -8,7 +8,19 @@
 //        mat3  : alignas(16)
 //        mat4  : alignas(16)
 
+const int numInstances = 30;
+
 struct MeshUniformBlock {
+	alignas(4) float visible;
+	alignas(4) float amb;
+	alignas(4) float gamma;
+	alignas(16) glm::vec3 sColor;
+	alignas(16) glm::mat4 mvpMat[numInstances];
+	alignas(16) glm::mat4 mMat[numInstances];
+	alignas(16) glm::mat4 nMat[numInstances];
+};
+
+struct PlayerUniformBlock {
 	alignas(4) float visible;
 	alignas(4) float amb;
 	alignas(4) float gamma;
@@ -54,13 +66,14 @@ struct PlayerData{
 	glm::vec3 maxVector, minVector;
 	glm::vec3 maxVectorWorld, minVectorWorld;
 	glm::vec3 angles;
-	MeshUniformBlock ubo;
+	PlayerUniformBlock ubo;
 };
 
 
 class Project;
 void GameLogic(Project *A);
 PlayerData initData(Model<VertexMesh> &Model, int scene, glm::mat4 world);
+glm::mat4 getWorld(glm::vec3 pos, glm::vec3 rot);
 
 // MAIN ! 
 class Project : public BaseProject {
@@ -79,7 +92,7 @@ class Project : public BaseProject {
 
 	protected:
 	// Descriptor Layouts
-	DescriptorSetLayout DSLGubo, DSLMesh, DSLOverlay, DSLVColor;
+	DescriptorSetLayout DSLGubo, DSLMesh, DSLOverlay, DSLVColor, DSLPlayer;
 
 	// Vertex formats
 	VertexDescriptor VMesh;
@@ -90,18 +103,18 @@ class Project : public BaseProject {
 	Pipeline PMesh;
 	Pipeline POverlay;
 	Pipeline PVColor;
+	Pipeline PPlayer;
 
 	// Models, textures and Descriptors
-	Model<VertexVColor> MTest;
 	Model<VertexOverlay> MMenu, MCrosshair;
-	Model<VertexMesh> MBarrel, MBarrel1;
+	Model<VertexMesh> MBarrel, MBarrel1, MWall;
 
-	DescriptorSet DSGubo, DSTest, DSMenu, DSCrosshair, DSBarrel, DSBarrel1;
+	DescriptorSet DSGubo, DSMenu, DSCrosshair, DSBarrel, DSBarrel1, DSWall;
 
 	Texture TMenu, TCrosshair, TCrosshairAlt, TVarious;
  	
 	// C++ storage for uniform variables
-	MeshUniformBlock uboTest;
+	MeshUniformBlock uboWall;
 	GlobalUniformBlock gubo;
 	OverlayUniformBlock uboMenu, uboCrosshair;
 
@@ -118,9 +131,9 @@ class Project : public BaseProject {
 		initialBackgroundColor = {0.0f, 0.005f, 0.01f, 1.0f};
 		
 		//Descriptor pool sizes
-		uniformBlocksInPool = 7;
-		texturesInPool = 6;
-		setsInPool = 8;
+		uniformBlocksInPool = 20;
+		texturesInPool = 10;
+		setsInPool = 20;
 		
 		Ar = (float)windowWidth / (float)windowHeight;
 		viewport = glm::vec4(0.0f,0.0f,currW,currH);
@@ -148,7 +161,10 @@ class Project : public BaseProject {
 					{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
 					{1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
 				});
-				
+		DSLPlayer.init(this, {
+					{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
+					{1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
+				});				
 		DSLOverlay.init(this, {
 					{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
 					{1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
@@ -229,6 +245,7 @@ class Project : public BaseProject {
 		// The last array, is a vector of pointer to the layouts of the sets that will
 		// be used in this pipeline. The first element will be set 0, and so on..
 		PMesh.init(this, &VMesh, "shaders/MeshVert.spv", "shaders/MeshFrag.spv", {&DSLGubo, &DSLMesh});
+		PPlayer.init(this, &VMesh, "shaders/PlayerVert.spv", "shaders/PlayerFrag.spv", {&DSLGubo, &DSLPlayer});
 		POverlay.init(this, &VOverlay, "shaders/OverlayVert.spv", "shaders/OverlayFrag.spv", {&DSLOverlay});
 		POverlay.setAdvancedFeatures(VK_COMPARE_OP_ALWAYS, VK_POLYGON_MODE_FILL,
  								    VK_CULL_MODE_NONE, true);
@@ -236,16 +253,9 @@ class Project : public BaseProject {
 		PVColor.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
  								    VK_CULL_MODE_NONE, true);
 		
+		
 		// Models, textures and Descriptors (values assigned to the uniforms)
 		// Create models
-		MTest.vertices.push_back({{0.0f,0.0f,0.0f},{0.0f,1.0f,0.0f},{255.0f,255.0f,255.0f}});
-		MTest.vertices.push_back({{10.0f,0.0f,0.0f},{0.0f,1.0f,0.0f},{255.0f,255.0f,255.0f}});
-		MTest.vertices.push_back({{0.0f,0.0f,10.0f},{0.0f,1.0f,0.0f},{255.0f,255.0f,255.0f}});
-		MTest.vertices.push_back({{10.0f,0.0f,10.0f},{0.0f,1.0f,0.0f},{255.0f,255.0f,255.0f}});
-		MTest.indices.push_back(0); MTest.indices.push_back(1); MTest.indices.push_back(2); 
-		MTest.indices.push_back(1); MTest.indices.push_back(2); MTest.indices.push_back(3);
-		MTest.initMesh(this, &VVColor); 
-
 		MMenu.vertices.push_back({{-1.0f,-1.0f},{0.0f,0.0f}});
 		MMenu.vertices.push_back({{-1.0f,1.0f},{0.0f,1.0f}});	
 		MMenu.vertices.push_back({{1.0f,-1.0f},{1.0f,0.0f}});	
@@ -265,15 +275,26 @@ class Project : public BaseProject {
 		//Create Playable models
 		//Player 0
 		MBarrel.init(this, &VMesh, "models/barrel.001.mgcg", MGCG);
-		glm::mat4 W = glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(5.0f,1.0f,5.0f)),
-													0.0f, glm::vec3(1,0,0));
-		playables.push_back(initData(MBarrel,1,W));
+		playables.push_back(initData(MBarrel,1,getWorld(glm::vec3(5.0f,1.0f,5.0f), glm::vec3(0))));
 
 		//Player 1
 		MBarrel1.init(this, &VMesh, "models/barrel.001.mgcg", MGCG);
 		playables.push_back(initData(MBarrel1,1,glm::mat4(1)));
 		playables[1].ubo.visible = 0.0f;
 		
+		MWall.init(this, &VMesh, "models/tunnel/tunnel.029_Mesh.6128.mgcg", MGCG);
+		glm::mat4 W1 = getWorld(glm::vec3(4,3,4),glm::vec3(0));
+		glm::mat4 W2 = getWorld(glm::vec3(5,3,5),glm::vec3(0));
+		glm::mat4 W3 = getWorld(glm::vec3(6,3,6),glm::vec3(0));
+
+		uboWall.amb = 1.0f; uboWall.gamma = 180.0f; uboWall.sColor = glm::vec3(1.0f);
+		uboWall.visible = 1.0f;
+		uboWall.mMat[0] = W1;
+		uboWall.mMat[1] = W2;
+		uboWall.mMat[2] = W3;
+		uboWall.nMat[0] = glm::inverse(glm::transpose(W1));
+		uboWall.nMat[1] = glm::inverse(glm::transpose(W2));
+		uboWall.nMat[2] = glm::inverse(glm::transpose(W3));
 
 		
 		// Create the textures
@@ -290,11 +311,9 @@ class Project : public BaseProject {
 		PMesh.create();
 		POverlay.create();
 		PVColor.create();
+		PPlayer.create();
 		
 		// Here you define the data set
-		DSTest.init(this, &DSLVColor, {
-					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr}
-				});
 		DSMenu.init(this, &DSLOverlay, {
 					{0, UNIFORM, sizeof(OverlayUniformBlock), nullptr},
 					{1, TEXTURE, 0, &TMenu},
@@ -305,14 +324,18 @@ class Project : public BaseProject {
 					{1, TEXTURE, 0, &TCrosshair},
 					{2, TEXTURE, 0, &TCrosshairAlt}
 				});
-		DSBarrel.init(this, &DSLMesh, {
+		DSBarrel.init(this, &DSLPlayer, {
 					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
 					{1, TEXTURE, 0, &TVarious}
 				});
-		DSBarrel1.init(this, &DSLMesh, {
+		DSBarrel1.init(this, &DSLPlayer, {
 					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
 					{1, TEXTURE, 0, &TVarious}
-		});					
+		});
+		DSWall.init(this, &DSLMesh, {
+					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
+					{1, TEXTURE, 0, &TVarious}
+		});						
 		DSGubo.init(this, &DSLGubo, {
 					{0, UNIFORM, sizeof(GlobalUniformBlock), nullptr}
 				});
@@ -327,13 +350,14 @@ class Project : public BaseProject {
 		PMesh.cleanup();
 		POverlay.cleanup();
 		PVColor.cleanup();
+		PPlayer.cleanup();
 
 		// Cleanup datasets
-		DSTest.cleanup();
 		DSMenu.cleanup();
 		DSCrosshair.cleanup();
 		DSBarrel.cleanup();
 		DSBarrel1.cleanup();
+		DSWall.cleanup();
 		DSGubo.cleanup();
 	}
 
@@ -349,22 +373,24 @@ class Project : public BaseProject {
 		TVarious.cleanup();
 
 		// Cleanup models
-		MTest.cleanup();
 		MMenu.cleanup();
 		MCrosshair.cleanup();
 		MBarrel.cleanup();
 		MBarrel1.cleanup();
+		MWall.cleanup();
 		
 		// Cleanup descriptor set layouts
 		DSLMesh.cleanup();
 		DSLOverlay.cleanup();
 		DSLVColor.cleanup();
+		DSLPlayer.cleanup();
 		DSLGubo.cleanup();
 		
 		// Destroies the pipelines
 		PMesh.destroy();		
 		POverlay.destroy();
 		PVColor.destroy();
+		PPlayer.destroy();
 	}
 	
 	// Here it is the creation of the command buffer:
@@ -380,24 +406,26 @@ class Project : public BaseProject {
 					static_cast<uint32_t>(MMenu.indices.size()),1,0,0,0);
 				break;
 			case 1:
-				DSGubo.bind(commandBuffer, PMesh, 0, currentImage);
-				PMesh.bind(commandBuffer);
+				DSGubo.bind(commandBuffer, PPlayer, 0, currentImage);
+				PPlayer.bind(commandBuffer);
 				MBarrel.bind(commandBuffer);
-				DSBarrel.bind(commandBuffer, PMesh, 1, currentImage);
+				DSBarrel.bind(commandBuffer, PPlayer, 1, currentImage);
 				vkCmdDrawIndexed(commandBuffer,
 					static_cast<uint32_t>(MBarrel.indices.size()), 1, 0, 0, 0);
 				MBarrel1.bind(commandBuffer);
-				DSBarrel1.bind(commandBuffer, PMesh, 1, currentImage);
+				DSBarrel1.bind(commandBuffer, PPlayer, 1, currentImage);
 				vkCmdDrawIndexed(commandBuffer,
 					static_cast<uint32_t>(MBarrel1.indices.size()), 1, 0, 0, 0);
 
+				DSGubo.bind(commandBuffer, PMesh, 0, currentImage);
+				PMesh.bind(commandBuffer);
+				MWall.bind(commandBuffer);
+				DSWall.bind(commandBuffer, PMesh, 1, currentImage);	
+				vkCmdDrawIndexed(commandBuffer,
+					static_cast<uint32_t>(MWall.indices.size()), 3, 0, 0, 0);
 
 				DSGubo.bind(commandBuffer,PVColor,0,currentImage);
 				PVColor.bind(commandBuffer);			
-				MTest.bind(commandBuffer);
-				DSTest.bind(commandBuffer,PVColor,1,currentImage);
-				vkCmdDrawIndexed(commandBuffer,
-					static_cast<uint32_t>(MTest.indices.size()),1,0,0,0);
 
 				POverlay.bind(commandBuffer);
 				MCrosshair.bind(commandBuffer);
@@ -430,15 +458,12 @@ class Project : public BaseProject {
 				uboMenu.visible = 1.0f;
 				DSMenu.map(currentImage, &uboMenu, sizeof(uboMenu), 0);
 				break;
-			case 1: //Level 1			
-				glm::mat4 World = glm::mat4(1);	
-				uboTest.visible = 1.0f;	
-				uboTest.amb = 1.0f; uboTest.gamma = 180.0f; uboTest.sColor = glm::vec3(1.0f);
-				uboTest.mvpMat = Prj * View * World;
-				uboTest.mMat = World;
-				uboTest.nMat = glm::inverse(glm::transpose(World));
-				DSTest.map(currentImage, &uboTest, sizeof(uboTest), 0);
-				
+			case 1: //Level 1	
+				for(int i = 0; i<sizeof(uboWall.mMat)/sizeof(uboWall.mMat[0]); i++){
+					uboWall.mvpMat[i] = Prj * View * uboWall.mMat[i];
+				}
+				DSWall.map(currentImage, &uboWall, sizeof(uboWall), 0);
+
 				playables[0].ubo.mvpMat = Prj * View * playables[0].ubo.mMat;
 				DSBarrel.map(currentImage, &playables[0].ubo, sizeof(playables[0].ubo), 0);
 
@@ -495,4 +520,12 @@ PlayerData initData(Model<VertexMesh> &Model, int scene, glm::mat4 world){
 	data.ubo.visible = 1.0f;
 
 	return data;
+}
+
+//Create World Matrix given position and rotation
+glm::mat4 getWorld(glm::vec3 pos, glm::vec3 rot){
+	return 	glm::translate(glm::mat4(1.0f), pos) *
+        	glm::rotate(glm::mat4(1.0f), rot.x, glm::vec3(1.0f, 0.0f, 0.0f)) *
+            glm::rotate(glm::mat4(1.0f), rot.y, glm::vec3(0.0f, 1.0f, 0.0f)) *
+            glm::rotate(glm::mat4(1.0f), rot.z, glm::vec3(0.0f, 0.0f, 1.0f));
 }

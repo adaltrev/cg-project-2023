@@ -2,3 +2,5 @@ bin
 cbin
 *.spv
 
+*.spv
+*.bat

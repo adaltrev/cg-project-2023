@@ -60,7 +60,7 @@ void GameLogic(Project *A){
         pointing = -1;      
         for(int i=0;i<A->playables.size();i++){
             if(i!=A->currentPlayer && A->playables[i].scene==currentScene){
-                PlayerData model = A->playables[i];
+                PlayerData &model = A->playables[i];
 
                 glm::vec3 tMin = (model.minVectorWorld - rayStart) * invDir;
                 glm::vec3 tMax = (model.maxVectorWorld - rayStart) * invDir;
@@ -80,13 +80,13 @@ void GameLogic(Project *A){
         //"Mind Transfer" between playable models
         if(handleFire) {
             if(A->detect){
-                PlayerData model = A->playables[A->currentPlayer];
-                PlayerData target = A->playables[pointing];
+                PlayerData &model = A->playables[A->currentPlayer];
+                PlayerData &target = A->playables[pointing];
+                getWorld(glm::vec3(0),glm::vec3(0));
 
                 //Place current model in camera position, with camera angles. Update uniforms
                 model.ubo.visible = 1.0f;
-                model.ubo.mMat = glm::translate(glm::mat4(1.0f), A->camPos)
-                        * glm::rotate(glm::mat4(1.0f), beta, glm::vec3(0.0f, 1.0f, 0.0f));
+                model.ubo.mMat = getWorld(A->camPos,glm::vec3(0,beta,0));
                 model.ubo.nMat = glm::inverse(glm::transpose(model.ubo.mMat));
                 model.minVectorWorld=glm::vec3(model.ubo.mMat 
                         * glm::vec4(model.minVector,1.0));
