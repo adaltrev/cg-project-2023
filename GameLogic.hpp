@@ -80,9 +80,6 @@ void GameLogic(Project *A){
             if(A->detect){
                 PlayerData &model = A->playables[A->currentPlayer];
                 PlayerData &target = A->playables[pointing];
-                std::cout<<"BEFORE:"<<std::endl;
-                std::cout<<"Model: "<<alpha<<", "<<beta<<std::endl;
-                std::cout<<"Target: "<<target.angles.x<<", "<<target.angles.y<<std::endl;
 
                 glm::vec3 newPos = glm::vec3(A->camPos.x,A->camPos.y-camHeight,A->camPos.z);
                 glm::mat4 W = getWorld(newPos,glm::vec3(0,alpha,0)) * glm::scale(glm::mat4(1),glm::vec3(model.scale));
@@ -102,11 +99,7 @@ void GameLogic(Project *A){
                 A->camPos=glm::vec3(W[3]); A->camPos.y+=camHeight;
                 alpha = target.angles.x;
                 beta = target.angles.y;
-
-                std::cout<<"AFTER:"<<std::endl;
-                std::cout<<"Model: "<<alpha<<", "<<beta<<std::endl;
-                std::cout<<"Target: "<<target.angles.x<<", "<<target.angles.y<<std::endl<<std::endl;                
-
+            
                 target.ubo.visible = 0.0f;
                 model.ubo.visible = 1.0f;                
                 A->currentPlayer = pointing;                

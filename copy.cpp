@@ -139,9 +139,9 @@ class Project : public BaseProject {
 		initialBackgroundColor = {0.0f, 0.005f, 0.01f, 1.0f};
 		
 		//Descriptor pool sizes
-		uniformBlocksInPool = 20;
+		uniformBlocksInPool = 30;
 		texturesInPool = 10;
-		setsInPool = 20;
+		setsInPool = 30;
 		
 		Ar = (float)windowWidth / (float)windowHeight;
 		viewport = glm::vec4(0.0f,0.0f,currW,currH);
@@ -297,6 +297,7 @@ class Project : public BaseProject {
 		glm::mat4 W = getWorld(glm::vec3(5.0f,0,2.0f), glm::vec3(0));
 		playables.push_back(initData(MStatue1,1,W,0.1));
 		
+		//Level scenery objects
 		LevelCreation(this);
 		MFloor.initMesh(this, &VVColor);
 		MCorner.init(this, &VMesh, "models/tunnel/tunnel.029_Mesh.6128.mgcg", MGCG);
@@ -466,6 +467,10 @@ class Project : public BaseProject {
 				DSCorner.bind(commandBuffer, PMesh, 1, currentImage);	
 				vkCmdDrawIndexed(commandBuffer,
 					static_cast<uint32_t>(MCorner.indices.size()), 15, 0, 0, 0);
+				MBrickCorner.bind(commandBuffer);
+				DSBrickCorner.bind(commandBuffer, PMesh, 1, currentImage);	
+				vkCmdDrawIndexed(commandBuffer,
+					static_cast<uint32_t>(MBrickCorner.indices.size()), 1, 0, 0, 0);
 				MWall.bind(commandBuffer);
 				DSWall.bind(commandBuffer, PMesh, 1, currentImage);	
 				vkCmdDrawIndexed(commandBuffer,
@@ -531,6 +536,11 @@ class Project : public BaseProject {
 					uboCorner.mvpMat[i] = Prj * View * uboCorner.mMat[i];
 				}
 				DSCorner.map(currentImage, &uboCorner, sizeof(uboCorner), 0);
+
+				for(int i = 0; i<sizeof(uboBrickCorner.mMat)/sizeof(uboBrickCorner.mMat[0]); i++){
+					uboBrickCorner.mvpMat[i] = Prj * View * uboBrickCorner.mMat[i];
+				}
+				DSBrickCorner.map(currentImage, &uboBrickCorner, sizeof(uboBrickCorner), 0);
 
 				for(int i = 0; i<sizeof(uboWall.mMat)/sizeof(uboWall.mMat[0]); i++){
 					uboWall.mvpMat[i] = Prj * View * uboWall.mMat[i];

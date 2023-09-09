@@ -59,10 +59,15 @@ void LevelCreation(Project *A){
     uboCorner.mMat[8] = getWorld(glm::vec3(0.35,0,9.5),glm::vec3(0, glm::radians(-90.f), 0));
     uboCorner.mMat[9] = getWorld(glm::vec3(-5.75,0,9.5),glm::vec3(0));
     uboCorner.mMat[10] = getWorld(glm::vec3(0.35,0,13.5),glm::vec3(0, glm::radians(180.f), 0));
-    uboCorner.mMat[11] = getWorld(glm::vec3(-5.75,0,13.5),glm::vec3(0, glm::radians(90.f), 0));
-    uboCorner.mMat[12] = getWorld(glm::vec3(-4.15,0,-9.65),glm::vec3(0));
-    for(int i=0; i<=12; i++){
+    uboCorner.mMat[11] = getWorld(glm::vec3(-5.75,0,13.5),glm::vec3(0, glm::radians(90.f), 0));   
+    for(int i=0; i<=11; i++){
         uboCorner.nMat[i] = glm::inverse(glm::transpose(uboCorner.mMat[i]));
+    }
+
+    uboBrickCorner.amb = 1.0f; uboBrickCorner.gamma = 180.0f; uboBrickCorner.sColor = glm::vec3(1.0f); uboBrickCorner.visible = 1.0f;
+    uboBrickCorner.mMat[0] = getWorld(glm::vec3(-4.15,0,-9.65),glm::vec3(0));
+    for(int i=0; i<=0; i++){
+        uboBrickCorner.nMat[i] = glm::inverse(glm::transpose(uboBrickCorner.mMat[i]));
     }
 
 
@@ -94,7 +99,7 @@ void LevelCreation(Project *A){
     uboBrickWall.mMat[1] = getWorld(glm::vec3(-4.15,0,-1.675),glm::vec3(0, glm::radians(90.f), 0));
     uboBrickWall.mMat[2] = getWorld(glm::vec3(-1.25,0,-5.65),glm::vec3(0, glm::radians(-90.f), 0));
     uboBrickWall.mMat[3] = getWorld(glm::vec3(-4.15,0,-5.65),glm::vec3(0, glm::radians(90.f), 0));
-    for(int i=0; i<=14; i++){
+    for(int i=0; i<=3; i++){
         uboBrickWall.nMat[i] = glm::inverse(glm::transpose(uboBrickWall.mMat[i]));
     }
 
@@ -103,7 +108,7 @@ void LevelCreation(Project *A){
     uboCellBars.amb = 1.0f; uboCellBars.gamma = 180.0f; uboCellBars.sColor = glm::vec3(1.0f); uboCellBars.visible = 1.0f;
     uboCellBars.mMat[0] = getWorld(glm::vec3(0.125,0,5),glm::vec3(0, glm::radians(90.f), 0));
     uboCellBars.mMat[1] = getWorld(glm::vec3(-3,0,9.75),glm::vec3(0, 0, 0));
-    for(int i=0; i<=14; i++){
+    for(int i=0; i<=1; i++){
         uboCellBars.nMat[i] = glm::inverse(glm::transpose(uboCellBars.mMat[i]));
     }
 
