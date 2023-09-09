@@ -9,6 +9,7 @@
 //        mat4  : alignas(16)
 
 const int numInstances = 30;
+//const int numPointLights = 30;
 const float camHeight = 1.85f;
 
 struct MeshUniformBlock {
@@ -41,6 +42,8 @@ struct GlobalUniformBlock {
 	alignas(16) glm::vec3 DlightColor;
 	alignas(16) glm::vec3 AmbLightColor;
 	alignas(16) glm::vec3 eyePos;
+	alignas(16) glm::vec3 PlightPos;
+	alignas(16) glm::vec3 PlightColor;
 };
 
 // The vertices data structures
@@ -139,9 +142,9 @@ class Project : public BaseProject {
 		initialBackgroundColor = {0.0f, 0.005f, 0.01f, 1.0f};
 		
 		//Descriptor pool sizes
-		uniformBlocksInPool = 30;
-		texturesInPool = 10;
-		setsInPool = 30;
+		uniformBlocksInPool = 50;
+		texturesInPool = 50;
+		setsInPool = 50;
 		
 		Ar = (float)windowWidth / (float)windowHeight;
 		viewport = glm::vec4(0.0f,0.0f,currW,currH);
@@ -516,6 +519,8 @@ class Project : public BaseProject {
 		gubo.DlightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 		gubo.AmbLightColor = glm::vec3(0.1f);
 		gubo.eyePos = camPos;
+		gubo.PlightColor = glm::vec3(1.0, 0.5, 0.0);
+		gubo.PlightPos = glm::vec3(-3.6,1.75,-0.5); 
 		DSGubo.map(currentImage, &gubo, sizeof(gubo), 0);
 
 		//Update uniforms for all object, based on the current scene
