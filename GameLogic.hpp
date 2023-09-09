@@ -1,8 +1,8 @@
 const float fov = glm::radians(45.0f);
 const float n = 0.1f;
 const float f = 100.0f;
-const float ROT_SPEED = glm::radians(90.0f);
-const float MOVE_SPEED = 1.0f;
+const float ROT_SPEED = glm::radians(120.0f);
+const float MOVE_SPEED = 3.0f;
 const float minPitch = glm::radians(-60.0f);
 const float maxPitch = glm::radians(60.0f);
 

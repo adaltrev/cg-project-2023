@@ -112,7 +112,7 @@ class Project : public BaseProject {
 
 	DescriptorSet DSGubo, DSMenu, DSCrosshair, DSBarrel, DSBarrel1, DSCorner, DSWall, DSCellBars, DSFloor, DSCorridorWall;
 
-	Texture TMenu, TCrosshair, TCrosshairAlt, TVarious;
+	Texture TMenu, TCrosshair, TCrosshairAlt, TVarious, TStone;
  	
 	// C++ storage for uniform variables
 	MeshUniformBlock uboCorner, uboWall, uboCellBars, uboCorridorWall;
@@ -301,11 +301,14 @@ class Project : public BaseProject {
 
 		MFloor.initMesh(this, &VVColor);
 		uboFloor.amb = 1.0f; uboFloor.gamma = 180.0f; uboFloor.sColor = glm::vec3(1); uboFloor.visible = 1.0f;
-		uboFloor.mMat[0]=glm::mat4(1); uboFloor.nMat[0]=glm::mat4(1);
+		uboFloor.mMat[0]=glm::mat4(1); 
+		uboFloor.mMat[1]=getWorld(glm::vec3(0,2.5,0),glm::vec3(0));
+		uboFloor.nMat[0]=glm::inverse(glm::transpose(uboFloor.mMat[0]));
+		uboFloor.nMat[1]=glm::inverse(glm::transpose(uboFloor.mMat[1]));
 
 		//Create Playable models
 		//Player 0
-		MBarrel.init(this, &VMesh, "models/barrel.001.mgcg", MGCG);
+		MBarrel.init(this, &VMesh, "models/statue.obj", OBJ);
 		playables.push_back(initData(MBarrel,1,getWorld(glm::vec3(5.0f,1.0f,2.0f), glm::vec3(0))));
 
 		//Player 1
@@ -399,6 +402,7 @@ class Project : public BaseProject {
 		TCrosshair.init(this, "textures/Crosshair.png");
 		TCrosshairAlt.init(this, "textures/Crosshair1.png");
 		TVarious.init(this, "textures/Textures_Food.png");
+		TStone.init(this, "textures/stone.jpg");
 	}
 	
 	// Here you create your pipelines and Descriptor Sets!
@@ -428,7 +432,7 @@ class Project : public BaseProject {
 
 		DSBarrel.init(this, &DSLPlayer, {
 					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
-					{1, TEXTURE, 0, &TVarious}
+					{1, TEXTURE, 0, &TStone}
 				});
 		DSBarrel1.init(this, &DSLPlayer, {
 					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
@@ -489,6 +493,7 @@ class Project : public BaseProject {
 		TCrosshair.cleanup();
 		TCrosshairAlt.cleanup();
 		TVarious.cleanup();
+		TStone.cleanup();
 
 		// Cleanup models
 		MMenu.cleanup();
@@ -567,7 +572,7 @@ class Project : public BaseProject {
 				MFloor.bind(commandBuffer);
 				DSFloor.bind(commandBuffer,PVColor,1,currentImage);
 				vkCmdDrawIndexed(commandBuffer,
-					static_cast<uint32_t>(MFloor.indices.size()),1,0,0,0);			
+					static_cast<uint32_t>(MFloor.indices.size()),2,0,0,0);			
 
 				//Overlay
 				POverlay.bind(commandBuffer);
@@ -601,8 +606,10 @@ class Project : public BaseProject {
 				uboMenu.visible = 1.0f;
 				DSMenu.map(currentImage, &uboMenu, sizeof(uboMenu), 0);
 				break;
-			case 1: //Level 1	
-				uboFloor.mvpMat[0] = Prj * View * uboFloor.mMat[0];
+			case 1: //Level 1
+				for(int i = 0; i<sizeof(uboFloor.mMat)/sizeof(uboFloor.mMat[0]); i++){
+					uboFloor.mvpMat[i] = Prj * View * uboFloor.mMat[i];
+				}	
 				DSFloor.map(currentImage, &uboFloor, sizeof(uboFloor), 0);
 
 				for(int i = 0; i<sizeof(uboCorner.mMat)/sizeof(uboCorner.mMat[0]); i++){

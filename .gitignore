@@ -5,3 +5,5 @@ cbin
 *.spv
 *.bat
 *.exe
+shaders/MeshFrag.spv
+shaders/MeshVert.spv
