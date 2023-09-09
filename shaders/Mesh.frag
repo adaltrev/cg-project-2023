@@ -21,10 +21,9 @@ layout(set = 1, binding = 0) uniform UniformBufferObject {
 	float amb;
 	float gamma;
 	vec3 sColor;
-	mat4 mvpMat;
-	mat4 mMat;
-	mat4 nMat;
-	mat4 instanceArray[numInstances];
+	mat4 mvpMat[numInstances];
+	mat4 mMat[numInstances];
+	mat4 nMat[numInstances];
 } ubo;
 
 layout(set = 1, binding = 1) uniform sampler2D tex;

@@ -84,7 +84,7 @@ class Project : public BaseProject {
 	bool detect = false;
 	float Ar, currW, currH;
 	glm::vec4 viewport;
-	glm::vec3 camPos = glm::vec3(0.0f, 0.0f, 0.0f);	
+	glm::vec3 camPos = glm::vec3(5.0f, 1.0f, 5.0f);	
 	glm::mat4 View, Prj;
 	std::vector<PlayerData> playables;
 
@@ -108,8 +108,9 @@ class Project : public BaseProject {
 	// Models, textures and Descriptors
 	Model<VertexOverlay> MMenu, MCrosshair;
 	Model<VertexMesh> MBarrel, MBarrel1, MCorner, MWall, MCellBars;
+	Model<VertexVColor> MFloor;
 
-	DescriptorSet DSGubo, DSMenu, DSCrosshair, DSBarrel, DSBarrel1, DSCorner, DSWall, DSCellBars;
+	DescriptorSet DSGubo, DSMenu, DSCrosshair, DSBarrel, DSBarrel1, DSCorner, DSWall, DSCellBars, DSFloor;
 
 	Texture TMenu, TCrosshair, TCrosshairAlt, TVarious;
  	
@@ -117,6 +118,7 @@ class Project : public BaseProject {
 	MeshUniformBlock uboCorner, uboWall, uboCellBars;
 	GlobalUniformBlock gubo;
 	OverlayUniformBlock uboMenu, uboCrosshair;
+	MeshUniformBlock uboFloor;
 
 
 	//Main application parameters
@@ -272,14 +274,25 @@ class Project : public BaseProject {
 		MCrosshair.indices.push_back(1); MCrosshair.indices.push_back(2); MCrosshair.indices.push_back(3);
 		MCrosshair.initMesh(this, &VOverlay);
 
+		float color = 34.1f/255.0f;
+		MFloor.vertices.push_back({{0.0f,0.0f,0.0f},{0.0f,1.0f,0.0f},{color,color,color}});
+		MFloor.vertices.push_back({{10.0f,0.0f,0.0f},{0.0f,1.0f,0.0f},{color,color,color}});
+		MFloor.vertices.push_back({{0.0f,0.0f,10.0f},{0.0f,1.0f,0.0f},{color,color,color}});
+		MFloor.vertices.push_back({{10.0f,0.0f,10.0f},{0.0f,1.0f,0.0f},{color,color,color}});
+		MFloor.indices.push_back(0); MFloor.indices.push_back(1); MFloor.indices.push_back(2); 
+		MFloor.indices.push_back(1); MFloor.indices.push_back(2); MFloor.indices.push_back(3);
+		MFloor.initMesh(this, &VVColor);
+		uboFloor.amb = 1.0f; uboFloor.gamma = 180.0f; uboFloor.sColor = glm::vec3(1); uboFloor.visible = 1.0f;
+		uboFloor.mMat[0]=glm::mat4(1); uboFloor.nMat[0]=glm::mat4(1);
+
 		//Create Playable models
 		//Player 0
 		MBarrel.init(this, &VMesh, "models/barrel.001.mgcg", MGCG);
-		playables.push_back(initData(MBarrel,1,getWorld(glm::vec3(5.0f,1.0f,5.0f), glm::vec3(0))));
+		playables.push_back(initData(MBarrel,1,getWorld(glm::vec3(5.0f,1.0f,2.0f), glm::vec3(0))));
 
 		//Player 1
 		MBarrel1.init(this, &VMesh, "models/barrel.001.mgcg", MGCG);
-		playables.push_back(initData(MBarrel1,1,glm::mat4(1)));
+		playables.push_back(initData(MBarrel1,1,getWorld(camPos,glm::vec3(0))));
 		playables[1].ubo.visible = 0.0f;
 		
 		MCorner.init(this, &VMesh, "models/tunnel/tunnel.029_Mesh.6128.mgcg", MGCG);
@@ -365,6 +378,11 @@ class Project : public BaseProject {
 					{1, TEXTURE, 0, &TCrosshair},
 					{2, TEXTURE, 0, &TCrosshairAlt}
 				});
+
+		DSFloor.init(this, &DSLVColor, {
+					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr}
+				});
+
 		DSBarrel.init(this, &DSLPlayer, {
 					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
 					{1, TEXTURE, 0, &TVarious}
@@ -408,6 +426,7 @@ class Project : public BaseProject {
 		DSBarrel1.cleanup();
 		DSCorner.cleanup();
 		DSWall.cleanup();
+		DSFloor.cleanup();
 		DSCellBars.cleanup();
 		DSGubo.cleanup();
 	}
@@ -431,6 +450,7 @@ class Project : public BaseProject {
 		MCorner.cleanup();
 		MWall.cleanup();
 		MCellBars.cleanup();
+		MFloor.cleanup();
 		
 		// Cleanup descriptor set layouts
 		DSLMesh.cleanup();
@@ -459,6 +479,7 @@ class Project : public BaseProject {
 					static_cast<uint32_t>(MMenu.indices.size()),1,0,0,0);
 				break;
 			case 1:
+				//Player
 				DSGubo.bind(commandBuffer, PPlayer, 0, currentImage);
 				PPlayer.bind(commandBuffer);
 				MBarrel.bind(commandBuffer);
@@ -491,9 +512,15 @@ class Project : public BaseProject {
 				vkCmdDrawIndexed(commandBuffer,
 					static_cast<uint32_t>(MCellBars.indices.size()), 2, 0, 0, 0);
 
+				//VColor
 				DSGubo.bind(commandBuffer,PVColor,0,currentImage);
-				PVColor.bind(commandBuffer);			
+				PVColor.bind(commandBuffer);
+				MFloor.bind(commandBuffer);
+				DSFloor.bind(commandBuffer,PVColor,1,currentImage);
+				vkCmdDrawIndexed(commandBuffer,
+					static_cast<uint32_t>(MFloor.indices.size()),1,0,0,0);			
 
+				//Overlay
 				POverlay.bind(commandBuffer);
 				MCrosshair.bind(commandBuffer);
 				DSCrosshair.bind(commandBuffer,POverlay,0,currentImage);
@@ -526,6 +553,9 @@ class Project : public BaseProject {
 				DSMenu.map(currentImage, &uboMenu, sizeof(uboMenu), 0);
 				break;
 			case 1: //Level 1	
+				uboFloor.mvpMat[0] = Prj * View * uboFloor.mMat[0];
+				DSFloor.map(currentImage, &uboFloor, sizeof(uboFloor), 0);
+
 				for(int i = 0; i<sizeof(uboCorner.mMat)/sizeof(uboCorner.mMat[0]); i++){
 					uboCorner.mvpMat[i] = Prj * View * uboCorner.mMat[i];
 				}
