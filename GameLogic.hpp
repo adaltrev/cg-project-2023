@@ -82,11 +82,12 @@ void GameLogic(Project *A){
             if(A->detect){
                 PlayerData &model = A->playables[A->currentPlayer];
                 PlayerData &target = A->playables[pointing];
-                getWorld(glm::vec3(0),glm::vec3(0));
+
+                glm::mat4 W = getWorld(A->camPos,glm::vec3(0,beta,0)) * glm::scale(glm::mat4(1),glm::vec3(model.scale));
 
                 //Place current model in camera position, with camera angles. Update uniforms
                 model.ubo.visible = 1.0f;
-                model.ubo.mMat = getWorld(A->camPos,glm::vec3(0,beta,0));
+                model.ubo.mMat = W;
                 model.ubo.nMat = glm::inverse(glm::transpose(model.ubo.mMat));
                 model.minVectorWorld=glm::vec3(model.ubo.mMat 
                         * glm::vec4(model.minVector,1.0));
@@ -97,7 +98,7 @@ void GameLogic(Project *A){
 
                 //Update camera position and angles using the new model's world matrix
                 target.ubo.visible = 0.0f;
-                glm::mat4 W = target.ubo.mMat;
+                W = target.ubo.mMat;
                 A->camPos= glm::vec3(W[3]);
                 alpha = target.angles.x;
                 beta = target.angles.y;

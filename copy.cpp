@@ -67,12 +67,13 @@ struct PlayerData{
 	glm::vec3 maxVectorWorld, minVectorWorld;
 	glm::vec3 angles;
 	PlayerUniformBlock ubo;
+	float scale;
 };
 
 
 class Project;
 void GameLogic(Project *A);
-PlayerData initData(Model<VertexMesh> &Model, int scene, glm::mat4 world);
+PlayerData initData(Model<VertexMesh> &Model, int scene, glm::mat4 world, float scale);
 glm::mat4 getWorld(glm::vec3 pos, glm::vec3 rot);
 
 // MAIN ! 
@@ -80,7 +81,7 @@ class Project : public BaseProject {
 	public:
 	//Support variables
 	int currentScene = 0;
-	int currentPlayer = 1;
+	int currentPlayer = 0;
 	bool detect = false;
 	float Ar, currW, currH;
 	glm::vec4 viewport;
@@ -107,10 +108,10 @@ class Project : public BaseProject {
 
 	// Models, textures and Descriptors
 	Model<VertexOverlay> MMenu, MCrosshair;
-	Model<VertexMesh> MBarrel, MBarrel1, MCorner, MWall, MCellBars, MCorridorWall;
+	Model<VertexMesh> MStatue0, MStatue1, MCorner, MWall, MCellBars, MCorridorWall;
 	Model<VertexVColor> MFloor;
 
-	DescriptorSet DSGubo, DSMenu, DSCrosshair, DSBarrel, DSBarrel1, DSCorner, DSWall, DSCellBars, DSFloor, DSCorridorWall;
+	DescriptorSet DSGubo, DSMenu, DSCrosshair, DSStatue0, DSStatue1, DSCorner, DSWall, DSCellBars, DSFloor, DSCorridorWall;
 
 	Texture TMenu, TCrosshair, TCrosshairAlt, TVarious, TStone;
  	
@@ -255,9 +256,15 @@ class Project : public BaseProject {
 		PVColor.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
  								    VK_CULL_MODE_NONE, true);
 		
-		
-		// Models, textures and Descriptors (values assigned to the uniforms)
-		// Create models
+		// Create the textures
+		TMenu.init(this, "textures/Menu.png");
+		TCrosshair.init(this, "textures/Crosshair.png");
+		TCrosshairAlt.init(this, "textures/Crosshair1.png");
+		TVarious.init(this, "textures/Textures_Food.png");
+		TStone.init(this, "textures/stone.jpg");
+
+		// Create the models
+		// Menu
 		MMenu.vertices.push_back({{-1.0f,-1.0f},{0.0f,0.0f}});
 		MMenu.vertices.push_back({{-1.0f,1.0f},{0.0f,1.0f}});	
 		MMenu.vertices.push_back({{1.0f,-1.0f},{1.0f,0.0f}});	
@@ -265,7 +272,7 @@ class Project : public BaseProject {
 		MMenu.indices.push_back(0); MMenu.indices.push_back(1); MMenu.indices.push_back(2); 
 		MMenu.indices.push_back(1); MMenu.indices.push_back(2); MMenu.indices.push_back(3);
 		MMenu.initMesh(this, &VOverlay);
-
+		//Crosshair
 		MCrosshair.vertices.push_back({{-0.075f,-0.1f},{0.0f,0.0f}});
 		MCrosshair.vertices.push_back({{-0.075f,0.1f},{0.0f,1.0f}});	
 		MCrosshair.vertices.push_back({{0.075f,-0.1f},{1.0f,0.0f}});	
@@ -274,6 +281,7 @@ class Project : public BaseProject {
 		MCrosshair.indices.push_back(1); MCrosshair.indices.push_back(2); MCrosshair.indices.push_back(3);
 		MCrosshair.initMesh(this, &VOverlay);
 
+		//Floor + Ceiling
 		float color = 34.1f/255.0f;
 		MFloor.vertices.push_back({{0.0f,0.0f,0.0f},{0.0f,1.0f,0.0f},{color,color,color}});
 		MFloor.vertices.push_back({{10.0f,0.0f,0.0f},{0.0f,1.0f,0.0f},{color,color,color}});
@@ -298,7 +306,6 @@ class Project : public BaseProject {
 		MFloor.indices.push_back(9); MFloor.indices.push_back(10); MFloor.indices.push_back(11);
 		MFloor.indices.push_back(10); MFloor.indices.push_back(11); MFloor.indices.push_back(12);
 
-
 		MFloor.initMesh(this, &VVColor);
 		uboFloor.amb = 1.0f; uboFloor.gamma = 180.0f; uboFloor.sColor = glm::vec3(1); uboFloor.visible = 1.0f;
 		uboFloor.mMat[0]=glm::mat4(1); 
@@ -307,15 +314,18 @@ class Project : public BaseProject {
 		uboFloor.nMat[1]=glm::inverse(glm::transpose(uboFloor.mMat[1]));
 
 		//Create Playable models
-		//Player 0
-		MBarrel.init(this, &VMesh, "models/statue.obj", OBJ);
-		playables.push_back(initData(MBarrel,1,getWorld(glm::vec3(5.0f,1.0f,2.0f), glm::vec3(0))));
+		//Player 0 - Starting player
+		MStatue0.init(this, &VMesh, "models/statue.obj", OBJ);
+		playables.push_back(initData(MStatue0,1,getWorld(camPos,glm::vec3(0)),0.1));
+		playables[0].ubo.visible = 0.0f;
 
 		//Player 1
-		MBarrel1.init(this, &VMesh, "models/barrel.001.mgcg", MGCG);
-		playables.push_back(initData(MBarrel1,1,getWorld(camPos,glm::vec3(0))));
-		playables[1].ubo.visible = 0.0f;
+		MStatue1.init(this, &VMesh, "models/statue.obj", OBJ);
+		glm::mat4 W = getWorld(glm::vec3(5.0f,0,2.0f), glm::vec3(0));
+		playables.push_back(initData(MStatue1,1,W,0.1));
 		
+		//Scenery
+		//Walls
 		MCorner.init(this, &VMesh, "models/tunnel/tunnel.029_Mesh.6128.mgcg", MGCG);
 		uboCorner.amb = 1.0f; uboCorner.gamma = 180.0f; uboCorner.sColor = glm::vec3(1.0f);
 		uboCorner.visible = 1.0f;
@@ -379,13 +389,13 @@ class Project : public BaseProject {
 		uboCorridorWall.mMat[1] = getWorld(glm::vec3(-4.15,0,-1.675),glm::vec3(0, glm::radians(90.f), 0));
 		uboCorridorWall.mMat[2] = getWorld(glm::vec3(-1.25,0,-5.65),glm::vec3(0, glm::radians(-90.f), 0));
 		uboCorridorWall.mMat[3] = getWorld(glm::vec3(-4.15,0,-5.65),glm::vec3(0, glm::radians(90.f), 0));
-		
+
 		uboCorridorWall.nMat[0] = glm::inverse(glm::transpose(uboCorridorWall.mMat[0]));
 		uboCorridorWall.nMat[1] = glm::inverse(glm::transpose(uboCorridorWall.mMat[1]));
 		uboCorridorWall.nMat[2] = glm::inverse(glm::transpose(uboCorridorWall.mMat[2]));
 		uboCorridorWall.nMat[3] = glm::inverse(glm::transpose(uboCorridorWall.mMat[3]));
 		
-
+		//Cell bars
 		MCellBars.init(this, &VMesh, "models/tunnel/tunnel.033_Mesh.6508.mgcg", MGCG);
 		uboCellBars.amb = 1.0f; uboCellBars.gamma = 180.0f; uboCellBars.sColor = glm::vec3(1.0f);
 		uboCellBars.visible = 1.0f;
@@ -394,27 +404,18 @@ class Project : public BaseProject {
 
 		uboCellBars.nMat[0] = glm::inverse(glm::transpose(uboCellBars.mMat[0]));
 		uboCellBars.nMat[1] = glm::inverse(glm::transpose(uboCellBars.mMat[1]));
-
-
-
-		// Create the textures
-		TMenu.init(this, "textures/Menu.png");
-		TCrosshair.init(this, "textures/Crosshair.png");
-		TCrosshairAlt.init(this, "textures/Crosshair1.png");
-		TVarious.init(this, "textures/Textures_Food.png");
-		TStone.init(this, "textures/stone.jpg");
 	}
 	
+
 	// Here you create your pipelines and Descriptor Sets!
 	void pipelinesAndDescriptorSetsInit() {
 		std::cout<<"Initializing pipelines and sets...";
-		// This creates a new pipeline (with the current surface), using its shaders
 		PMesh.create();
 		POverlay.create();
 		PVColor.create();
 		PPlayer.create();
 		
-		// Here you define the data set
+		//Overlay
 		DSMenu.init(this, &DSLOverlay, {
 					{0, UNIFORM, sizeof(OverlayUniformBlock), nullptr},
 					{1, TEXTURE, 0, &TMenu},
@@ -426,18 +427,18 @@ class Project : public BaseProject {
 					{2, TEXTURE, 0, &TCrosshairAlt}
 				});
 
-		DSFloor.init(this, &DSLVColor, {
-					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr}
-				});
-
-		DSBarrel.init(this, &DSLPlayer, {
+		
+		//Playables
+		DSStatue0.init(this, &DSLPlayer, {
 					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
 					{1, TEXTURE, 0, &TStone}
 				});
-		DSBarrel1.init(this, &DSLPlayer, {
+		DSStatue1.init(this, &DSLPlayer, {
 					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
-					{1, TEXTURE, 0, &TVarious}
+					{1, TEXTURE, 0, &TStone}
 		});
+
+		//Scenery - Mesh
 		DSCorner.init(this, &DSLMesh, {
 					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
 					{1, TEXTURE, 0, &TVarious}
@@ -458,6 +459,12 @@ class Project : public BaseProject {
 					{0, UNIFORM, sizeof(GlobalUniformBlock), nullptr}
 				});
 
+		//Scenery - VColor
+		DSFloor.init(this, &DSLVColor, {
+			{0, UNIFORM, sizeof(MeshUniformBlock), nullptr}
+		});
+
+
 		std::cout<<"done!"<<std::endl;		
 	}
 
@@ -473,8 +480,8 @@ class Project : public BaseProject {
 		// Cleanup datasets
 		DSMenu.cleanup();
 		DSCrosshair.cleanup();
-		DSBarrel.cleanup();
-		DSBarrel1.cleanup();
+		DSStatue0.cleanup();
+		DSStatue1.cleanup();
 		DSCorner.cleanup();
 		DSWall.cleanup();
 		DSFloor.cleanup();
@@ -498,8 +505,8 @@ class Project : public BaseProject {
 		// Cleanup models
 		MMenu.cleanup();
 		MCrosshair.cleanup();
-		MBarrel.cleanup();
-		MBarrel1.cleanup();
+		MStatue0.cleanup();
+		MStatue1.cleanup();
 		MCorner.cleanup();
 		MWall.cleanup();
 		MCellBars.cleanup();
@@ -536,14 +543,14 @@ class Project : public BaseProject {
 				//Player
 				DSGubo.bind(commandBuffer, PPlayer, 0, currentImage);
 				PPlayer.bind(commandBuffer);
-				MBarrel.bind(commandBuffer);
-				DSBarrel.bind(commandBuffer, PPlayer, 1, currentImage);
+				MStatue0.bind(commandBuffer);
+				DSStatue0.bind(commandBuffer, PPlayer, 1, currentImage);
 				vkCmdDrawIndexed(commandBuffer,
-					static_cast<uint32_t>(MBarrel.indices.size()), 1, 0, 0, 0);
-				MBarrel1.bind(commandBuffer);
-				DSBarrel1.bind(commandBuffer, PPlayer, 1, currentImage);
+					static_cast<uint32_t>(MStatue0.indices.size()), 1, 0, 0, 0);
+				MStatue1.bind(commandBuffer);
+				DSStatue1.bind(commandBuffer, PPlayer, 1, currentImage);
 				vkCmdDrawIndexed(commandBuffer,
-					static_cast<uint32_t>(MBarrel1.indices.size()), 1, 0, 0, 0);
+					static_cast<uint32_t>(MStatue1.indices.size()), 1, 0, 0, 0);
 
 
 				//Mesh
@@ -607,6 +614,8 @@ class Project : public BaseProject {
 				DSMenu.map(currentImage, &uboMenu, sizeof(uboMenu), 0);
 				break;
 			case 1: //Level 1
+
+				//Scenery
 				for(int i = 0; i<sizeof(uboFloor.mMat)/sizeof(uboFloor.mMat[0]); i++){
 					uboFloor.mvpMat[i] = Prj * View * uboFloor.mMat[i];
 				}	
@@ -631,12 +640,14 @@ class Project : public BaseProject {
 				uboCellBars.mvpMat[1] = Prj * View *  uboCellBars.mMat[1];
 				DSCellBars.map(currentImage, &uboCellBars, sizeof(uboCellBars), 0);
 
+				//Playables
 				playables[0].ubo.mvpMat = Prj * View * playables[0].ubo.mMat;
-				DSBarrel.map(currentImage, &playables[0].ubo, sizeof(playables[0].ubo), 0);
+				DSStatue0.map(currentImage, &playables[0].ubo, sizeof(playables[0].ubo), 0);
 
 				playables[1].ubo.mvpMat = Prj * View * playables[1].ubo.mMat;
-				DSBarrel1.map(currentImage, &playables[1].ubo, sizeof(playables[1].ubo), 0);
+				DSStatue1.map(currentImage, &playables[1].ubo, sizeof(playables[1].ubo), 0);
 
+				//Crosshair
 				uboCrosshair.visible = 1.0f;
 				uboCrosshair.alternative = (float)detect;
 				DSCrosshair.map(currentImage, &uboCrosshair, sizeof(uboCrosshair), 0);
@@ -662,10 +673,11 @@ int main() {
 }
 
 //Set initial parameters for playable model
-PlayerData initData(Model<VertexMesh> &Model, int scene, glm::mat4 world){
+PlayerData initData(Model<VertexMesh> &Model, int scene, glm::mat4 world, float scale){
 	PlayerData data;
-
+	world *= glm::scale(glm::mat4(1),glm::vec3(scale));
 	data.scene = scene;
+	data.scale = scale;
 	data.angles = glm::vec3(0.0,0.0,0.0);
 
 	//Find minimum and maximum vertices for AABB computation

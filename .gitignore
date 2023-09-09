@@ -7,3 +7,4 @@ cbin
 *.exe
 shaders/MeshFrag.spv
 shaders/MeshVert.spv
+models/2.obj
