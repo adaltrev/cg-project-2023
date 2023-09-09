@@ -74,6 +74,7 @@ struct PlayerData{
 
 class Project;
 void GameLogic(Project *A);
+void LevelCreation(Project *A);
 PlayerData initData(Model<VertexMesh> &Model, int scene, glm::mat4 world, float scale);
 glm::mat4 getWorld(glm::vec3 pos, glm::vec3 rot);
 
@@ -90,7 +91,10 @@ class Project : public BaseProject {
 	glm::mat4 View, Prj;
 	std::vector<PlayerData> playables;
 
-
+	MeshUniformBlock uboWall, uboCorner, uboBrickWall, uboBrickCorner, uboCellBars, uboFloor;
+	Model<VertexMesh> MCorner, MWall, MCellBars, MBrickWall, MBrickCorner;
+	Model<VertexVColor> MFloor;
+	
 
 	protected:
 	// Descriptor Layouts
@@ -109,18 +113,18 @@ class Project : public BaseProject {
 
 	// Models, textures and Descriptors
 	Model<VertexOverlay> MMenu, MCrosshair;
-	Model<VertexMesh> MStatue0, MStatue1, MCorner, MWall, MCellBars, MCorridorWall;
-	Model<VertexVColor> MFloor;
+	Model<VertexMesh> MStatue0, MStatue1;
 
-	DescriptorSet DSGubo, DSMenu, DSCrosshair, DSStatue0, DSStatue1, DSCorner, DSWall, DSCellBars, DSFloor, DSCorridorWall;
+	DescriptorSet DSGubo, DSMenu, DSCrosshair; 
+	DescriptorSet DSWall, DSCorner, DSBrickWall, DSBrickCorner, DSCellBars, DSFloor; 
+	DescriptorSet DSStatue0, DSStatue1;
 
 	Texture TMenu, TCrosshair, TCrosshairAlt, TVarious, TStone;
  	
 	// C++ storage for uniform variables
-	MeshUniformBlock uboCorner, uboWall, uboCellBars, uboCorridorWall;
+	
 	GlobalUniformBlock gubo;
 	OverlayUniformBlock uboMenu, uboCrosshair;
-	MeshUniformBlock uboFloor;
 
 
 	//Main application parameters
@@ -282,38 +286,6 @@ class Project : public BaseProject {
 		MCrosshair.indices.push_back(1); MCrosshair.indices.push_back(2); MCrosshair.indices.push_back(3);
 		MCrosshair.initMesh(this, &VOverlay);
 
-		//Floor + Ceiling
-		float color = 34.1f/255.0f;
-		MFloor.vertices.push_back({{0.0f,0.0f,0.0f},{0.0f,1.0f,0.0f},{color,color,color}});
-		MFloor.vertices.push_back({{10.0f,0.0f,0.0f},{0.0f,1.0f,0.0f},{color,color,color}});
-		MFloor.vertices.push_back({{0.0f,0.0f,10.0f},{0.0f,1.0f,0.0f},{color,color,color}});
-		MFloor.vertices.push_back({{10.0f,0.0f,10.0f},{0.0f,1.0f,0.0f},{color,color,color}});
-		MFloor.vertices.push_back({{-5.75f,0.0f,0.0f},{0.0f,1.0f,0.0f},{color,color,color}});
-		MFloor.vertices.push_back({{-5.75f,0.0f,10.0f},{0.0f,1.0f,0.0f},{color,color,color}});
-		MFloor.vertices.push_back({{0.35f,0.0f,10.0f},{0.0f,1.0f,0.0f},{color,color,color}});
-		MFloor.vertices.push_back({{0.35f,0.0f,13.5f},{0.0f,1.0f,0.0f},{color,color,color}});
-		MFloor.vertices.push_back({{-5.75f,0.0f,13.5f},{0.0f,1.0f,0.0f},{color,color,color}});
-		MFloor.vertices.push_back({{-1.25f,0.0f,-7.65f},{0.0f,1.0f,0.0f},{color,color,color}});
-		MFloor.vertices.push_back({{-4.15f,0.0f,-7.65f},{0.0f,1.0f,0.0f},{color,color,color}});
-		MFloor.vertices.push_back({{-1.25f,0.0f,-1.65},{0.0f,1.0f,0.0f},{color,color,color}});
-		MFloor.vertices.push_back({{-4.15f,0.0f,-1.675f},{0.0f,1.0f,0.0f},{color,color,color}});
-
-		MFloor.indices.push_back(0); MFloor.indices.push_back(1); MFloor.indices.push_back(2); 
-		MFloor.indices.push_back(1); MFloor.indices.push_back(2); MFloor.indices.push_back(3);
-		MFloor.indices.push_back(0); MFloor.indices.push_back(2); MFloor.indices.push_back(4);
-		MFloor.indices.push_back(2); MFloor.indices.push_back(4); MFloor.indices.push_back(5);
-		MFloor.indices.push_back(5); MFloor.indices.push_back(6); MFloor.indices.push_back(7);
-		MFloor.indices.push_back(5); MFloor.indices.push_back(7); MFloor.indices.push_back(8);
-		MFloor.indices.push_back(9); MFloor.indices.push_back(10); MFloor.indices.push_back(11);
-		MFloor.indices.push_back(10); MFloor.indices.push_back(11); MFloor.indices.push_back(12);
-
-		MFloor.initMesh(this, &VVColor);
-		uboFloor.amb = 1.0f; uboFloor.gamma = 180.0f; uboFloor.sColor = glm::vec3(1); uboFloor.visible = 1.0f;
-		uboFloor.mMat[0]=glm::mat4(1); 
-		uboFloor.mMat[1]=getWorld(glm::vec3(0,2.5,0),glm::vec3(0));
-		uboFloor.nMat[0]=glm::inverse(glm::transpose(uboFloor.mMat[0]));
-		uboFloor.nMat[1]=glm::inverse(glm::transpose(uboFloor.mMat[1]));
-
 		//Create Playable models
 		//Player 0 - Starting player
 		MStatue0.init(this, &VMesh, "models/statue.obj", OBJ);
@@ -325,100 +297,13 @@ class Project : public BaseProject {
 		glm::mat4 W = getWorld(glm::vec3(5.0f,0,2.0f), glm::vec3(0));
 		playables.push_back(initData(MStatue1,1,W,0.1));
 		
-		//Scenery
-		//Walls
+		LevelCreation(this);
+		MFloor.initMesh(this, &VVColor);
 		MCorner.init(this, &VMesh, "models/tunnel/tunnel.029_Mesh.6128.mgcg", MGCG);
-		uboCorner.amb = 1.0f; uboCorner.gamma = 180.0f; uboCorner.sColor = glm::vec3(1.0f);
-		uboCorner.visible = 1.0f;
-		uboCorner.mMat[0] = getWorld(glm::vec3(0,0,10),glm::vec3(0, glm::radians(90.f), 0));;
-		uboCorner.mMat[1] = getWorld(glm::vec3(10,0,10),glm::vec3(0, glm::radians(180.f), 0));
-		uboCorner.mMat[2] = getWorld(glm::vec3(0,0,0),glm::vec3(0));
-		uboCorner.mMat[3] = getWorld(glm::vec3(10,0,0),glm::vec3(0, glm::radians(-90.f), 0));
-		uboCorner.mMat[4] = getWorld(glm::vec3(-5.75,0,0),glm::vec3(0));
-		uboCorner.mMat[5] = getWorld(glm::vec3(-5.75,0,10),glm::vec3(0, glm::radians(90.f), 0));
-		uboCorner.mMat[6] = getWorld(glm::vec3(0.35,0,0),glm::vec3(0, glm::radians(-90.f), 0));
-		uboCorner.mMat[7] = getWorld(glm::vec3(0.35,0,10),glm::vec3(0, glm::radians(180.f), 0));
-		uboCorner.mMat[8] = getWorld(glm::vec3(0.35,0,9.5),glm::vec3(0, glm::radians(-90.f), 0));
-		uboCorner.mMat[9] = getWorld(glm::vec3(-5.75,0,9.5),glm::vec3(0));
-		uboCorner.mMat[10] = getWorld(glm::vec3(0.35,0,13.5),glm::vec3(0, glm::radians(180.f), 0));
-		uboCorner.mMat[11] = getWorld(glm::vec3(-5.75,0,13.5),glm::vec3(0, glm::radians(90.f), 0));
-		uboCorner.mMat[12] = getWorld(glm::vec3(-4.15,0,-9.65),glm::vec3(0));
-
-
-		uboCorner.nMat[0] = glm::inverse(glm::transpose(uboCorner.mMat[0]));
-		uboCorner.nMat[1] = glm::inverse(glm::transpose(uboCorner.mMat[1]));
-		uboCorner.nMat[2] = glm::inverse(glm::transpose(uboCorner.mMat[2]));
-		uboCorner.nMat[3] = glm::inverse(glm::transpose(uboCorner.mMat[3]));
-		uboCorner.nMat[4] = glm::inverse(glm::transpose(uboCorner.mMat[4]));
-		uboCorner.nMat[5] = glm::inverse(glm::transpose(uboCorner.mMat[5]));
-		uboCorner.nMat[6] = glm::inverse(glm::transpose(uboCorner.mMat[6]));
-		uboCorner.nMat[7] = glm::inverse(glm::transpose(uboCorner.mMat[7]));
-		uboCorner.nMat[8] = glm::inverse(glm::transpose(uboCorner.mMat[8]));
-		uboCorner.nMat[9] = glm::inverse(glm::transpose(uboCorner.mMat[9]));
-		uboCorner.nMat[10] = glm::inverse(glm::transpose(uboCorner.mMat[10]));
-		uboCorner.nMat[11] = glm::inverse(glm::transpose(uboCorner.mMat[11]));
-		uboCorner.nMat[12] = glm::inverse(glm::transpose(uboCorner.mMat[12]));
-
-
 		MWall.init(this, &VMesh, "models/tunnel/tunnel.005_Mesh.7961.mgcg", MGCG);
-		uboWall.amb = 1.0f; uboWall.gamma = 180.0f; uboWall.sColor = glm::vec3(1.0f);
-		uboWall.visible = 1.0f;
-		uboWall.mMat[0] = getWorld(glm::vec3(10,0,4),glm::vec3(0, glm::radians(-90.f), 0));
-		uboWall.mMat[1] = getWorld(glm::vec3(10,0,6),glm::vec3(0, glm::radians(-90.f), 0));
-		uboWall.mMat[2] = getWorld(glm::vec3(4,0,0),glm::vec3(0));
-		uboWall.mMat[3] = getWorld(glm::vec3(6,0,0),glm::vec3(0));
-		uboWall.mMat[4] = getWorld(glm::vec3(4,0,10),glm::vec3(0, glm::radians(180.f), 0));
-		uboWall.mMat[5] = getWorld(glm::vec3(6,0,10),glm::vec3(0, glm::radians(180.f), 0));
-		uboWall.mMat[6] = getWorld(glm::vec3(0,0,2),glm::vec3(0, glm::radians(90.f), 0));
-		uboWall.mMat[7] = getWorld(glm::vec3(0,0,8),glm::vec3(0, glm::radians(90.f), 0));
-		uboWall.mMat[8] = getWorld(glm::vec3(-5.75,0,4),glm::vec3(0, glm::radians(90.f), 0));
-		uboWall.mMat[9] = getWorld(glm::vec3(-5.75,0,6),glm::vec3(0, glm::radians(90.f), 0));
-		uboWall.mMat[10] = getWorld(glm::vec3(-2.25,0,13.5),glm::vec3(0, glm::radians(180.f), 0));
-		uboWall.mMat[11] = getWorld(glm::vec3(-0.2,0,-9.65),glm::vec3(0));
-		uboWall.mMat[12] = getWorld(glm::vec3(0.4,0,-7.25),glm::vec3(0, glm::radians(180.f), 0));
-		uboWall.mMat[13] = getWorld(glm::vec3(1.41,0,-11.32),glm::vec3(0, glm::radians(90.f), 0));
-		uboWall.mMat[14] = getWorld(glm::vec3(1.9,0,-5.25),glm::vec3(0, glm::radians(90.f), 0));
-
-
-		uboWall.nMat[0] = glm::inverse(glm::transpose(uboWall.mMat[0]));
-		uboWall.nMat[1] = glm::inverse(glm::transpose(uboWall.mMat[1]));
-		uboWall.nMat[2] = glm::inverse(glm::transpose(uboWall.mMat[2]));
-		uboWall.nMat[3] = glm::inverse(glm::transpose(uboWall.mMat[3]));
-		uboWall.nMat[4] = glm::inverse(glm::transpose(uboWall.mMat[4]));
-		uboWall.nMat[5] = glm::inverse(glm::transpose(uboWall.mMat[5]));
-		uboWall.nMat[6] = glm::inverse(glm::transpose(uboWall.mMat[6]));
-		uboWall.nMat[7] = glm::inverse(glm::transpose(uboWall.mMat[7]));
-		uboWall.nMat[8] = glm::inverse(glm::transpose(uboWall.mMat[8]));
-		uboWall.nMat[9] = glm::inverse(glm::transpose(uboWall.mMat[9]));
-		uboWall.nMat[10] = glm::inverse(glm::transpose(uboWall.mMat[10]));
-		uboWall.nMat[11] = glm::inverse(glm::transpose(uboWall.mMat[11]));
-		uboWall.nMat[12] = glm::inverse(glm::transpose(uboWall.mMat[12]));
-		uboWall.nMat[13] = glm::inverse(glm::transpose(uboWall.mMat[13]));
-		uboWall.nMat[14] = glm::inverse(glm::transpose(uboWall.mMat[14]));
-
-
-		MCorridorWall.init(this, &VMesh, "models/tunnel/tunnel.031_Mesh.7927.mgcg", MGCG);
-		uboCorridorWall.amb = 1.0f; uboCorridorWall.gamma = 180.0f; uboCorridorWall.sColor = glm::vec3(1.0f);
-		uboCorridorWall.visible = 1.0f;
-		uboCorridorWall.mMat[0] = getWorld(glm::vec3(-1.25,0,-1.65),glm::vec3(0, glm::radians(-90.f), 0));
-		uboCorridorWall.mMat[1] = getWorld(glm::vec3(-4.15,0,-1.675),glm::vec3(0, glm::radians(90.f), 0));
-		uboCorridorWall.mMat[2] = getWorld(glm::vec3(-1.25,0,-5.65),glm::vec3(0, glm::radians(-90.f), 0));
-		uboCorridorWall.mMat[3] = getWorld(glm::vec3(-4.15,0,-5.65),glm::vec3(0, glm::radians(90.f), 0));
-
-		uboCorridorWall.nMat[0] = glm::inverse(glm::transpose(uboCorridorWall.mMat[0]));
-		uboCorridorWall.nMat[1] = glm::inverse(glm::transpose(uboCorridorWall.mMat[1]));
-		uboCorridorWall.nMat[2] = glm::inverse(glm::transpose(uboCorridorWall.mMat[2]));
-		uboCorridorWall.nMat[3] = glm::inverse(glm::transpose(uboCorridorWall.mMat[3]));
-		
-		//Cell bars
+		MBrickWall.init(this, &VMesh, "models/tunnel/tunnel.031_Mesh.7927.mgcg", MGCG);
+		MBrickCorner.init(this, &VMesh, "models/tunnel/tunnel.030_Mesh.7968.mgcg", MGCG);
 		MCellBars.init(this, &VMesh, "models/tunnel/tunnel.033_Mesh.6508.mgcg", MGCG);
-		uboCellBars.amb = 1.0f; uboCellBars.gamma = 180.0f; uboCellBars.sColor = glm::vec3(1.0f);
-		uboCellBars.visible = 1.0f;
-		uboCellBars.mMat[0] = getWorld(glm::vec3(0.125,0,5),glm::vec3(0, glm::radians(90.f), 0));
-		uboCellBars.mMat[1] = getWorld(glm::vec3(-3,0,9.75),glm::vec3(0, 0, 0));
-
-		uboCellBars.nMat[0] = glm::inverse(glm::transpose(uboCellBars.mMat[0]));
-		uboCellBars.nMat[1] = glm::inverse(glm::transpose(uboCellBars.mMat[1]));
 	}
 	
 
@@ -466,10 +351,14 @@ class Project : public BaseProject {
 					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
 					{1, TEXTURE, 0, &TVarious}
 		});	
-		DSCorridorWall.init(this, &DSLMesh, {
+		DSBrickWall.init(this, &DSLMesh, {
 					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
 					{1, TEXTURE, 0, &TVarious}
-		});								
+		});
+		DSBrickCorner.init(this, &DSLMesh, {
+					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
+					{1, TEXTURE, 0, &TVarious}
+		});										
 		DSGubo.init(this, &DSLGubo, {
 					{0, UNIFORM, sizeof(GlobalUniformBlock), nullptr}
 				});
@@ -501,7 +390,8 @@ class Project : public BaseProject {
 		DSWall.cleanup();
 		DSFloor.cleanup();
 		DSCellBars.cleanup();
-		DSCorridorWall.cleanup();
+		DSBrickWall.cleanup();
+		DSBrickCorner.cleanup();
 		DSGubo.cleanup();
 	}
 
@@ -526,7 +416,8 @@ class Project : public BaseProject {
 		MWall.cleanup();
 		MCellBars.cleanup();
 		MFloor.cleanup();
-		MCorridorWall.cleanup();
+		MBrickWall.cleanup();
+		MBrickCorner.cleanup();
 
 		// Cleanup descriptor set layouts
 		DSLMesh.cleanup();
@@ -583,10 +474,10 @@ class Project : public BaseProject {
 				DSCellBars.bind(commandBuffer, PMesh, 1, currentImage);	
 				vkCmdDrawIndexed(commandBuffer,
 					static_cast<uint32_t>(MCellBars.indices.size()), 2, 0, 0, 0);
-				MCorridorWall.bind(commandBuffer);
-				DSCorridorWall.bind(commandBuffer, PMesh, 1, currentImage);	
+				MBrickWall.bind(commandBuffer);
+				DSBrickWall.bind(commandBuffer, PMesh, 1, currentImage);	
 				vkCmdDrawIndexed(commandBuffer,
-					static_cast<uint32_t>(MCorridorWall.indices.size()), 4, 0, 0, 0);
+					static_cast<uint32_t>(MBrickWall.indices.size()), 4, 0, 0, 0);
 				
 				//VColor
 				DSGubo.bind(commandBuffer,PVColor,0,currentImage);
@@ -646,10 +537,10 @@ class Project : public BaseProject {
 				}
 				DSWall.map(currentImage, &uboWall, sizeof(uboWall), 0);
 
-				for(int i = 0; i<sizeof(uboCorridorWall.mMat)/sizeof(uboCorridorWall.mMat[0]); i++){
-					uboCorridorWall.mvpMat[i] = Prj * View * uboCorridorWall.mMat[i];
+				for(int i = 0; i<sizeof(uboBrickWall.mMat)/sizeof(uboBrickWall.mMat[0]); i++){
+					uboBrickWall.mvpMat[i] = Prj * View * uboBrickWall.mMat[i];
 				}
-				DSCorridorWall.map(currentImage, &uboCorridorWall, sizeof(uboCorridorWall), 0);
+				DSBrickWall.map(currentImage, &uboBrickWall, sizeof(uboBrickWall), 0);
 
 				uboCellBars.mvpMat[0] = Prj * View *  uboCellBars.mMat[0];
 				uboCellBars.mvpMat[1] = Prj * View *  uboCellBars.mMat[1];
@@ -674,6 +565,7 @@ class Project : public BaseProject {
 };
 
 #include "GameLogic.hpp"
+#include "LevelCreation.hpp"
 
 // This is the main: probably you do not need to touch this!
 int main() {
