@@ -341,6 +341,8 @@ class Project : public BaseProject {
 		uboCorner.mMat[9] = getWorld(glm::vec3(-5.75,0,9.5),glm::vec3(0));
 		uboCorner.mMat[10] = getWorld(glm::vec3(0.35,0,13.5),glm::vec3(0, glm::radians(180.f), 0));
 		uboCorner.mMat[11] = getWorld(glm::vec3(-5.75,0,13.5),glm::vec3(0, glm::radians(90.f), 0));
+		uboCorner.mMat[12] = getWorld(glm::vec3(-4.15,0,-9.65),glm::vec3(0));
+
 
 		uboCorner.nMat[0] = glm::inverse(glm::transpose(uboCorner.mMat[0]));
 		uboCorner.nMat[1] = glm::inverse(glm::transpose(uboCorner.mMat[1]));
@@ -354,6 +356,8 @@ class Project : public BaseProject {
 		uboCorner.nMat[9] = glm::inverse(glm::transpose(uboCorner.mMat[9]));
 		uboCorner.nMat[10] = glm::inverse(glm::transpose(uboCorner.mMat[10]));
 		uboCorner.nMat[11] = glm::inverse(glm::transpose(uboCorner.mMat[11]));
+		uboCorner.nMat[12] = glm::inverse(glm::transpose(uboCorner.mMat[12]));
+
 
 		MWall.init(this, &VMesh, "models/tunnel/tunnel.005_Mesh.7961.mgcg", MGCG);
 		uboWall.amb = 1.0f; uboWall.gamma = 180.0f; uboWall.sColor = glm::vec3(1.0f);
@@ -369,6 +373,11 @@ class Project : public BaseProject {
 		uboWall.mMat[8] = getWorld(glm::vec3(-5.75,0,4),glm::vec3(0, glm::radians(90.f), 0));
 		uboWall.mMat[9] = getWorld(glm::vec3(-5.75,0,6),glm::vec3(0, glm::radians(90.f), 0));
 		uboWall.mMat[10] = getWorld(glm::vec3(-2.25,0,13.5),glm::vec3(0, glm::radians(180.f), 0));
+		uboWall.mMat[11] = getWorld(glm::vec3(-0.2,0,-9.65),glm::vec3(0));
+		uboWall.mMat[12] = getWorld(glm::vec3(0.4,0,-7.25),glm::vec3(0, glm::radians(180.f), 0));
+		uboWall.mMat[13] = getWorld(glm::vec3(1.41,0,-11.32),glm::vec3(0, glm::radians(90.f), 0));
+		uboWall.mMat[14] = getWorld(glm::vec3(1.9,0,-5.25),glm::vec3(0, glm::radians(90.f), 0));
+
 
 		uboWall.nMat[0] = glm::inverse(glm::transpose(uboWall.mMat[0]));
 		uboWall.nMat[1] = glm::inverse(glm::transpose(uboWall.mMat[1]));
@@ -381,6 +390,11 @@ class Project : public BaseProject {
 		uboWall.nMat[8] = glm::inverse(glm::transpose(uboWall.mMat[8]));
 		uboWall.nMat[9] = glm::inverse(glm::transpose(uboWall.mMat[9]));
 		uboWall.nMat[10] = glm::inverse(glm::transpose(uboWall.mMat[10]));
+		uboWall.nMat[11] = glm::inverse(glm::transpose(uboWall.mMat[11]));
+		uboWall.nMat[12] = glm::inverse(glm::transpose(uboWall.mMat[12]));
+		uboWall.nMat[13] = glm::inverse(glm::transpose(uboWall.mMat[13]));
+		uboWall.nMat[14] = glm::inverse(glm::transpose(uboWall.mMat[14]));
+
 
 		MCorridorWall.init(this, &VMesh, "models/tunnel/tunnel.031_Mesh.7927.mgcg", MGCG);
 		uboCorridorWall.amb = 1.0f; uboCorridorWall.gamma = 180.0f; uboCorridorWall.sColor = glm::vec3(1.0f);
@@ -559,11 +573,11 @@ class Project : public BaseProject {
 				MCorner.bind(commandBuffer);
 				DSCorner.bind(commandBuffer, PMesh, 1, currentImage);	
 				vkCmdDrawIndexed(commandBuffer,
-					static_cast<uint32_t>(MCorner.indices.size()), 12, 0, 0, 0);
+					static_cast<uint32_t>(MCorner.indices.size()), 15, 0, 0, 0);
 				MWall.bind(commandBuffer);
 				DSWall.bind(commandBuffer, PMesh, 1, currentImage);	
 				vkCmdDrawIndexed(commandBuffer,
-					static_cast<uint32_t>(MWall.indices.size()), 11, 0, 0, 0);
+					static_cast<uint32_t>(MWall.indices.size()), 15, 0, 0, 0);
 				MCellBars.bind(commandBuffer);
 				DSCellBars.bind(commandBuffer, PMesh, 1, currentImage);	
 				vkCmdDrawIndexed(commandBuffer,
