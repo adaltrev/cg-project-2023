@@ -107,14 +107,14 @@ class Project : public BaseProject {
 
 	// Models, textures and Descriptors
 	Model<VertexOverlay> MMenu, MCrosshair;
-	Model<VertexMesh> MBarrel, MBarrel1, MWall;
+	Model<VertexMesh> MBarrel, MBarrel1, MCorner, MWall, MCellBars;
 
-	DescriptorSet DSGubo, DSMenu, DSCrosshair, DSBarrel, DSBarrel1, DSWall;
+	DescriptorSet DSGubo, DSMenu, DSCrosshair, DSBarrel, DSBarrel1, DSCorner, DSWall, DSCellBars;
 
 	Texture TMenu, TCrosshair, TCrosshairAlt, TVarious;
  	
 	// C++ storage for uniform variables
-	MeshUniformBlock uboWall;
+	MeshUniformBlock uboCorner, uboWall, uboCellBars;
 	GlobalUniformBlock gubo;
 	OverlayUniformBlock uboMenu, uboCrosshair;
 
@@ -282,21 +282,62 @@ class Project : public BaseProject {
 		playables.push_back(initData(MBarrel1,1,glm::mat4(1)));
 		playables[1].ubo.visible = 0.0f;
 		
-		MWall.init(this, &VMesh, "models/tunnel/tunnel.029_Mesh.6128.mgcg", MGCG);
-		glm::mat4 W1 = getWorld(glm::vec3(4,3,4),glm::vec3(0));
-		glm::mat4 W2 = getWorld(glm::vec3(5,3,5),glm::vec3(0));
-		glm::mat4 W3 = getWorld(glm::vec3(6,3,6),glm::vec3(0));
+		MCorner.init(this, &VMesh, "models/tunnel/tunnel.029_Mesh.6128.mgcg", MGCG);
+		glm::mat4 C1 = getWorld(glm::vec3(0,0,10),glm::vec3(0, glm::radians(90.f), 0));
+		glm::mat4 C2 = getWorld(glm::vec3(10,0,10),glm::vec3(0, glm::radians(180.f), 0));
+		glm::mat4 C3 = getWorld(glm::vec3(0,0,0),glm::vec3(0));
+		glm::mat4 C4 = getWorld(glm::vec3(10,0,0),glm::vec3(0, glm::radians(-90.f), 0));
+
+		uboCorner.amb = 1.0f; uboCorner.gamma = 180.0f; uboCorner.sColor = glm::vec3(1.0f);
+		uboCorner.visible = 1.0f;
+		uboCorner.mMat[0] = C1;
+		uboCorner.mMat[1] = C2;
+		uboCorner.mMat[2] = C3;
+		uboCorner.mMat[3] = C4;
+		uboCorner.nMat[0] = glm::inverse(glm::transpose(C1));
+		uboCorner.nMat[1] = glm::inverse(glm::transpose(C2));
+		uboCorner.nMat[2] = glm::inverse(glm::transpose(C3));
+		uboCorner.nMat[3] = glm::inverse(glm::transpose(C4));
+
+		MWall.init(this, &VMesh, "models/tunnel/tunnel.005_Mesh.7961.mgcg", MGCG);
+		glm::mat4 W1 = getWorld(glm::vec3(10,0,4),glm::vec3(0, glm::radians(-90.f), 0));
+		glm::mat4 W2 = getWorld(glm::vec3(10,0,6),glm::vec3(0, glm::radians(-90.f), 0));
+		glm::mat4 W3 = getWorld(glm::vec3(4,0,0),glm::vec3(0));
+		glm::mat4 W4 = getWorld(glm::vec3(6,0,0),glm::vec3(0));
+		glm::mat4 W5 = getWorld(glm::vec3(4,0,10),glm::vec3(0, glm::radians(180.f), 0));
+		glm::mat4 W6 = getWorld(glm::vec3(6,0,10),glm::vec3(0, glm::radians(180.f), 0));
+		glm::mat4 W7 = getWorld(glm::vec3(0,0,2),glm::vec3(0, glm::radians(90.f), 0));
+		glm::mat4 W8 = getWorld(glm::vec3(0,0,8),glm::vec3(0, glm::radians(90.f), 0));
 
 		uboWall.amb = 1.0f; uboWall.gamma = 180.0f; uboWall.sColor = glm::vec3(1.0f);
 		uboWall.visible = 1.0f;
 		uboWall.mMat[0] = W1;
 		uboWall.mMat[1] = W2;
 		uboWall.mMat[2] = W3;
+		uboWall.mMat[3] = W4;
+		uboWall.mMat[4] = W5;
+		uboWall.mMat[5] = W6;
+		uboWall.mMat[6] = W7;
+		uboWall.mMat[7] = W8;
 		uboWall.nMat[0] = glm::inverse(glm::transpose(W1));
 		uboWall.nMat[1] = glm::inverse(glm::transpose(W2));
 		uboWall.nMat[2] = glm::inverse(glm::transpose(W3));
+		uboWall.nMat[3] = glm::inverse(glm::transpose(W4));
+		uboWall.nMat[4] = glm::inverse(glm::transpose(W5));
+		uboWall.nMat[5] = glm::inverse(glm::transpose(W6));
+		uboWall.nMat[6] = glm::inverse(glm::transpose(W7));
+		uboWall.nMat[7] = glm::inverse(glm::transpose(W8));
 
-		
+		MCellBars.init(this, &VMesh, "models/tunnel/tunnel.033_Mesh.6508.mgcg", MGCG);
+		glm::mat4 CB1 = getWorld(glm::vec3(0.25,0,5),glm::vec3(0, glm::radians(90.f), 0));
+		//glm::mat4 W2 = getWorld(glm::vec3(0,0,6),glm::vec3(0, glm::radians(-90.f), 0));
+		uboCellBars.amb = 1.0f; uboCellBars.gamma = 180.0f; uboCellBars.sColor = glm::vec3(1.0f);
+		uboCellBars.visible = 1.0f;
+		uboCellBars.mMat[0] = CB1;
+		uboCellBars.nMat[0] = glm::inverse(glm::transpose(CB1));
+
+
+
 		// Create the textures
 		TMenu.init(this, "textures/Menu.png");
 		TCrosshair.init(this, "textures/Crosshair.png");
@@ -332,10 +373,18 @@ class Project : public BaseProject {
 					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
 					{1, TEXTURE, 0, &TVarious}
 		});
+		DSCorner.init(this, &DSLMesh, {
+					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
+					{1, TEXTURE, 0, &TVarious}
+		});	
 		DSWall.init(this, &DSLMesh, {
 					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
 					{1, TEXTURE, 0, &TVarious}
-		});						
+		});	
+		DSCellBars.init(this, &DSLMesh, {
+					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
+					{1, TEXTURE, 0, &TVarious}
+		});								
 		DSGubo.init(this, &DSLGubo, {
 					{0, UNIFORM, sizeof(GlobalUniformBlock), nullptr}
 				});
@@ -357,7 +406,9 @@ class Project : public BaseProject {
 		DSCrosshair.cleanup();
 		DSBarrel.cleanup();
 		DSBarrel1.cleanup();
+		DSCorner.cleanup();
 		DSWall.cleanup();
+		DSCellBars.cleanup();
 		DSGubo.cleanup();
 	}
 
@@ -377,7 +428,9 @@ class Project : public BaseProject {
 		MCrosshair.cleanup();
 		MBarrel.cleanup();
 		MBarrel1.cleanup();
+		MCorner.cleanup();
 		MWall.cleanup();
+		MCellBars.cleanup();
 		
 		// Cleanup descriptor set layouts
 		DSLMesh.cleanup();
@@ -419,10 +472,24 @@ class Project : public BaseProject {
 
 				DSGubo.bind(commandBuffer, PMesh, 0, currentImage);
 				PMesh.bind(commandBuffer);
+				MCorner.bind(commandBuffer);
+				DSCorner.bind(commandBuffer, PMesh, 1, currentImage);	
+				vkCmdDrawIndexed(commandBuffer,
+					static_cast<uint32_t>(MCorner.indices.size()), 4, 0, 0, 0);
+
+				DSGubo.bind(commandBuffer, PMesh, 0, currentImage);
+				PMesh.bind(commandBuffer);
 				MWall.bind(commandBuffer);
 				DSWall.bind(commandBuffer, PMesh, 1, currentImage);	
 				vkCmdDrawIndexed(commandBuffer,
-					static_cast<uint32_t>(MWall.indices.size()), 3, 0, 0, 0);
+					static_cast<uint32_t>(MWall.indices.size()), 8, 0, 0, 0);
+
+				DSGubo.bind(commandBuffer, PMesh, 0, currentImage);
+				PMesh.bind(commandBuffer);
+				MCellBars.bind(commandBuffer);
+				DSCellBars.bind(commandBuffer, PMesh, 1, currentImage);	
+				vkCmdDrawIndexed(commandBuffer,
+					static_cast<uint32_t>(MCellBars.indices.size()), 2, 0, 0, 0);
 
 				DSGubo.bind(commandBuffer,PVColor,0,currentImage);
 				PVColor.bind(commandBuffer);			
@@ -459,10 +526,18 @@ class Project : public BaseProject {
 				DSMenu.map(currentImage, &uboMenu, sizeof(uboMenu), 0);
 				break;
 			case 1: //Level 1	
+				for(int i = 0; i<sizeof(uboCorner.mMat)/sizeof(uboCorner.mMat[0]); i++){
+					uboCorner.mvpMat[i] = Prj * View * uboCorner.mMat[i];
+				}
+				DSCorner.map(currentImage, &uboCorner, sizeof(uboCorner), 0);
+
 				for(int i = 0; i<sizeof(uboWall.mMat)/sizeof(uboWall.mMat[0]); i++){
 					uboWall.mvpMat[i] = Prj * View * uboWall.mMat[i];
 				}
 				DSWall.map(currentImage, &uboWall, sizeof(uboWall), 0);
+
+				uboCellBars.mvpMat[0] = Prj * View *  uboCellBars.mMat[0];
+				DSCellBars.map(currentImage, &uboCellBars, sizeof(uboCellBars), 0);
 
 				playables[0].ubo.mvpMat = Prj * View * playables[0].ubo.mMat;
 				DSBarrel.map(currentImage, &playables[0].ubo, sizeof(playables[0].ubo), 0);
