@@ -10,7 +10,6 @@ const float maxPitch = glm::radians(60.0f);
 void GameLogic(Project *A){
     static float alpha = 0.0f;
     static float beta = 0.0f;
-    static float rho = 0.0f;
     static int pointing;
 
     //Get input
@@ -32,7 +31,6 @@ void GameLogic(Project *A){
         alpha += ROT_SPEED * (-r.y) * deltaT;
         beta += ROT_SPEED * (-r.x) * deltaT;
         beta = glm::clamp(beta,minPitch,maxPitch);
-        rho += ROT_SPEED * r.z * deltaT;
 
         //Update camera position
         glm::vec3 ux = glm::vec3(glm::rotate(glm::mat4(1),alpha,glm::vec3(0,1,0)) * glm::vec4(1,0,0,1));
@@ -82,28 +80,35 @@ void GameLogic(Project *A){
             if(A->detect){
                 PlayerData &model = A->playables[A->currentPlayer];
                 PlayerData &target = A->playables[pointing];
+                std::cout<<"BEFORE:"<<std::endl;
+                std::cout<<"Model: "<<alpha<<", "<<beta<<std::endl;
+                std::cout<<"Target: "<<target.angles.x<<", "<<target.angles.y<<std::endl;
 
-                glm::mat4 W = getWorld(A->camPos,glm::vec3(0,beta,0)) * glm::scale(glm::mat4(1),glm::vec3(model.scale));
+                glm::vec3 newPos = glm::vec3(A->camPos.x,A->camPos.y-camHeight,A->camPos.z);
+                glm::mat4 W = getWorld(newPos,glm::vec3(0,alpha,0)) * glm::scale(glm::mat4(1),glm::vec3(model.scale));
 
-                //Place current model in camera position, with camera angles. Update uniforms
-                model.ubo.visible = 1.0f;
+                //Place current model in camera position, with camera angles. Update uniforms                
                 model.ubo.mMat = W;
                 model.ubo.nMat = glm::inverse(glm::transpose(model.ubo.mMat));
                 model.minVectorWorld=glm::vec3(model.ubo.mMat 
                         * glm::vec4(model.minVector,1.0));
 	            model.maxVectorWorld=glm::vec3(model.ubo.mMat 
                         * glm::vec4(model.maxVector,1.0));      
-                model.angles = glm::vec3(alpha,beta,rho);
+                model.angles = glm::vec2(alpha,beta);
                 
 
-                //Update camera position and angles using the new model's world matrix
-                target.ubo.visible = 0.0f;
+                //Update camera position and angles using the new model's world matrix                
                 W = target.ubo.mMat;
-                A->camPos= glm::vec3(W[3]);
+                A->camPos=glm::vec3(W[3]); A->camPos.y+=camHeight;
                 alpha = target.angles.x;
                 beta = target.angles.y;
-                rho = target.angles.z;
-                                
+
+                std::cout<<"AFTER:"<<std::endl;
+                std::cout<<"Model: "<<alpha<<", "<<beta<<std::endl;
+                std::cout<<"Target: "<<target.angles.x<<", "<<target.angles.y<<std::endl<<std::endl;                
+
+                target.ubo.visible = 0.0f;
+                model.ubo.visible = 1.0f;                
                 A->currentPlayer = pointing;                
             }            
         } 

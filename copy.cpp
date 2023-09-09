@@ -9,6 +9,7 @@
 //        mat4  : alignas(16)
 
 const int numInstances = 30;
+const float camHeight = 1.85f;
 
 struct MeshUniformBlock {
 	alignas(4) float visible;
@@ -65,7 +66,7 @@ struct PlayerData{
 	int scene;
 	glm::vec3 maxVector, minVector;
 	glm::vec3 maxVectorWorld, minVectorWorld;
-	glm::vec3 angles;
+	glm::vec2 angles;
 	PlayerUniformBlock ubo;
 	float scale;
 };
@@ -85,7 +86,7 @@ class Project : public BaseProject {
 	bool detect = false;
 	float Ar, currW, currH;
 	glm::vec4 viewport;
-	glm::vec3 camPos = glm::vec3(5.0f, 1.0f, 5.0f);	
+	glm::vec3 camPos = glm::vec3(5.0f, camHeight, 5.0f);	
 	glm::mat4 View, Prj;
 	std::vector<PlayerData> playables;
 
@@ -654,10 +655,11 @@ class Project : public BaseProject {
 				uboCellBars.mvpMat[1] = Prj * View *  uboCellBars.mMat[1];
 				DSCellBars.map(currentImage, &uboCellBars, sizeof(uboCellBars), 0);
 
-				//Playables
+				//Playables				
 				playables[0].ubo.mvpMat = Prj * View * playables[0].ubo.mMat;
 				DSStatue0.map(currentImage, &playables[0].ubo, sizeof(playables[0].ubo), 0);
 
+				//playables[1].ubo.mMat *= glm::rotate(glm::mat4(1),glm::radians(180.0f),glm::vec3(0,1,0));
 				playables[1].ubo.mvpMat = Prj * View * playables[1].ubo.mMat;
 				DSStatue1.map(currentImage, &playables[1].ubo, sizeof(playables[1].ubo), 0);
 
@@ -692,7 +694,7 @@ PlayerData initData(Model<VertexMesh> &Model, int scene, glm::mat4 world, float 
 	world *= glm::scale(glm::mat4(1),glm::vec3(scale));
 	data.scene = scene;
 	data.scale = scale;
-	data.angles = glm::vec3(0.0,0.0,0.0);
+	data.angles = glm::vec2(0.0,0.0);
 
 	//Find minimum and maximum vertices for AABB computation
 	data.minVector = glm::vec3(std::numeric_limits<float>::max());
