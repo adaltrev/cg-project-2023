@@ -1,6 +1,6 @@
 const float fov = glm::radians(45.0f);
 const float n = 0.1f;
-const float f = 100.0f;
+const float f = 20.0f;
 const float ROT_SPEED = glm::radians(120.0f);
 const float MOVE_SPEED = 3.0f;
 const float minPitch = glm::radians(-60.0f);
@@ -8,7 +8,7 @@ const float maxPitch = glm::radians(60.0f);
 
 
 void GameLogic(Project *A){
-    static float alpha = 0.0f;
+    static float alpha = glm::radians(90.0f);
     static float beta = 0.0f;
     static int pointing;
 
@@ -43,9 +43,9 @@ void GameLogic(Project *A){
         //Compute projection + view		
         A->Prj = glm::perspective(fov, A->Ar, n, f);
         A->Prj[1][1] *= -1;
-        A->View =  glm::rotate(glm::mat4(1.0),-beta,glm::vec3(1,0,0)) *
-                glm::rotate(glm::mat4(1.0),-alpha,glm::vec3(0,1,0)) *
-                glm::translate(glm::mat4(1.0), -(A->camPos));
+        A->View = glm::rotate(glm::mat4(1.0),-beta,glm::vec3(1,0,0)) *
+                  glm::rotate(glm::mat4(1.0),-alpha,glm::vec3(0,1,0)) *
+                  glm::translate(glm::mat4(1.0), -(A->camPos));
 
         //Compute raycast for crosshair detection
         glm::vec3 rayStart = glm::unProject(glm::vec3(A->currW/2, A->currH/2, 0.0f), A->View, A->Prj, A->viewport);
@@ -67,7 +67,7 @@ void GameLogic(Project *A){
                 float tNear = glm::max(glm::max(t1.x, t1.y), t1.z);
                 float tFar = glm::min(glm::min(t2.x, t2.y), t2.z);
 
-                if (tFar>=0 && tNear<=tFar){
+                if (tNear<=5 && tFar>=0 && tNear<=tFar){
                     A->detect = true;
                     pointing = i;
                     break;
@@ -101,8 +101,11 @@ void GameLogic(Project *A){
                 beta = target.angles.y;
             
                 target.ubo.visible = 0.0f;
-                model.ubo.visible = 1.0f;                
+                model.ubo.visible = 1.0f;                          
                 A->currentPlayer = pointing;                
+            }
+            else{
+                std::cout<<"x: "<<A->camPos.x<<", z: "<<A->camPos.z<<std::endl;
             }            
         } 
     }

@@ -90,7 +90,7 @@ class Project : public BaseProject {
 	bool detect = false;
 	float Ar, currW, currH;
 	glm::vec4 viewport;
-	glm::vec3 camPos = glm::vec3(5.0f, camHeight, 5.0f);	
+	glm::vec3 camPos = glm::vec3(9.0f, camHeight, 7.0f);	
 	glm::mat4 View, Prj;
 	std::vector<PlayerData> playables;
 
@@ -98,6 +98,7 @@ class Project : public BaseProject {
 	Model<VertexMesh> MCorner, MWall, MCellBars, MBrickWall, MBrickCorner;
 	Model<VertexVColor> MFloor;
 	
+	int wallCount, cornerCount, brickWallCount, brickCornerCount, cellBarsCount;
 
 	protected:
 	// Descriptor Layouts
@@ -116,11 +117,11 @@ class Project : public BaseProject {
 
 	// Models, textures and Descriptors
 	Model<VertexOverlay> MMenu, MCrosshair;
-	Model<VertexMesh> MStatue0, MStatue1;
+	Model<VertexMesh> MStatue0, MStatue1, MStatue2, MStatue3;
 
 	DescriptorSet DSGubo, DSMenu, DSCrosshair; 
 	DescriptorSet DSWall, DSCorner, DSBrickWall, DSBrickCorner, DSCellBars, DSFloor; 
-	DescriptorSet DSStatue0, DSStatue1;
+	DescriptorSet DSStatue0, DSStatue1, DSStatue2, DSStatue3;
 
 	Texture TMenu, TCrosshair, TCrosshairAlt, TVarious, TStone;
  	
@@ -297,8 +298,21 @@ class Project : public BaseProject {
 
 		//Player 1
 		MStatue1.init(this, &VMesh, "models/statue.obj", OBJ);
-		glm::mat4 W = getWorld(glm::vec3(5.0f,0,2.0f), glm::vec3(0));
+		glm::mat4 W = getWorld(glm::vec3(-1.3f,0,5.f), glm::vec3(0,glm::radians(90.0f),0));		 
 		playables.push_back(initData(MStatue1,1,W,0.1));
+		playables[1].angles=glm::vec2(glm::radians(90.f),0);
+
+		//Player 2
+		MStatue2.init(this, &VMesh, "models/statue.obj", OBJ);
+		W = getWorld(glm::vec3(-2.4f,0,-8.3f), glm::vec3(0,glm::radians(180.0f),0));
+		playables.push_back(initData(MStatue2,1,W,0.1));
+		playables[2].angles=glm::vec2(glm::radians(180.f),0);
+
+		//Player 3
+		MStatue3.init(this, &VMesh, "models/statue.obj", OBJ);
+		W = getWorld(glm::vec3(7.6f,2.5f,-8.6f), glm::vec3(0,glm::radians(90.0f),0));
+		playables.push_back(initData(MStatue3,1,W,0.1));
+		playables[3].angles=glm::vec2(glm::radians(90.f),0);
 		
 		//Level scenery objects
 		LevelCreation(this);
@@ -338,6 +352,14 @@ class Project : public BaseProject {
 					{1, TEXTURE, 0, &TStone}
 				});
 		DSStatue1.init(this, &DSLPlayer, {
+					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
+					{1, TEXTURE, 0, &TStone}
+		});
+		DSStatue2.init(this, &DSLPlayer, {
+					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
+					{1, TEXTURE, 0, &TStone}
+				});
+		DSStatue3.init(this, &DSLPlayer, {
 					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
 					{1, TEXTURE, 0, &TStone}
 		});
@@ -390,6 +412,8 @@ class Project : public BaseProject {
 		DSCrosshair.cleanup();
 		DSStatue0.cleanup();
 		DSStatue1.cleanup();
+		DSStatue2.cleanup();
+		DSStatue3.cleanup();
 		DSCorner.cleanup();
 		DSWall.cleanup();
 		DSFloor.cleanup();
@@ -416,6 +440,8 @@ class Project : public BaseProject {
 		MCrosshair.cleanup();
 		MStatue0.cleanup();
 		MStatue1.cleanup();
+		MStatue2.cleanup();
+		MStatue3.cleanup();
 		MCorner.cleanup();
 		MWall.cleanup();
 		MCellBars.cleanup();
@@ -461,6 +487,14 @@ class Project : public BaseProject {
 				DSStatue1.bind(commandBuffer, PPlayer, 1, currentImage);
 				vkCmdDrawIndexed(commandBuffer,
 					static_cast<uint32_t>(MStatue1.indices.size()), 1, 0, 0, 0);
+				MStatue2.bind(commandBuffer);
+				DSStatue2.bind(commandBuffer, PPlayer, 1, currentImage);
+				vkCmdDrawIndexed(commandBuffer,
+					static_cast<uint32_t>(MStatue2.indices.size()), 1, 0, 0, 0);
+				MStatue3.bind(commandBuffer);
+				DSStatue3.bind(commandBuffer, PPlayer, 1, currentImage);
+				vkCmdDrawIndexed(commandBuffer,
+					static_cast<uint32_t>(MStatue3.indices.size()), 1, 0, 0, 0);
 
 
 				//Mesh
@@ -469,23 +503,23 @@ class Project : public BaseProject {
 				MCorner.bind(commandBuffer);
 				DSCorner.bind(commandBuffer, PMesh, 1, currentImage);	
 				vkCmdDrawIndexed(commandBuffer,
-					static_cast<uint32_t>(MCorner.indices.size()), 15, 0, 0, 0);
+					static_cast<uint32_t>(MCorner.indices.size()), cornerCount, 0, 0, 0);
 				MBrickCorner.bind(commandBuffer);
 				DSBrickCorner.bind(commandBuffer, PMesh, 1, currentImage);	
 				vkCmdDrawIndexed(commandBuffer,
-					static_cast<uint32_t>(MBrickCorner.indices.size()), 1, 0, 0, 0);
+					static_cast<uint32_t>(MBrickCorner.indices.size()), brickCornerCount, 0, 0, 0);
 				MWall.bind(commandBuffer);
 				DSWall.bind(commandBuffer, PMesh, 1, currentImage);	
 				vkCmdDrawIndexed(commandBuffer,
-					static_cast<uint32_t>(MWall.indices.size()), 15, 0, 0, 0);
+					static_cast<uint32_t>(MWall.indices.size()), wallCount, 0, 0, 0);
 				MCellBars.bind(commandBuffer);
 				DSCellBars.bind(commandBuffer, PMesh, 1, currentImage);	
 				vkCmdDrawIndexed(commandBuffer,
-					static_cast<uint32_t>(MCellBars.indices.size()), 2, 0, 0, 0);
+					static_cast<uint32_t>(MCellBars.indices.size()), cellBarsCount, 0, 0, 0);
 				MBrickWall.bind(commandBuffer);
 				DSBrickWall.bind(commandBuffer, PMesh, 1, currentImage);	
 				vkCmdDrawIndexed(commandBuffer,
-					static_cast<uint32_t>(MBrickWall.indices.size()), 4, 0, 0, 0);
+					static_cast<uint32_t>(MBrickWall.indices.size()), brickWallCount, 0, 0, 0);	
 				
 				//VColor
 				DSGubo.bind(commandBuffer,PVColor,0,currentImage);
@@ -493,7 +527,7 @@ class Project : public BaseProject {
 				MFloor.bind(commandBuffer);
 				DSFloor.bind(commandBuffer,PVColor,1,currentImage);
 				vkCmdDrawIndexed(commandBuffer,
-					static_cast<uint32_t>(MFloor.indices.size()),2,0,0,0);			
+					static_cast<uint32_t>(MFloor.indices.size()),1,0,0,0);			
 
 				//Overlay
 				POverlay.bind(commandBuffer);
@@ -532,30 +566,29 @@ class Project : public BaseProject {
 			case 1: //Level 1
 
 				//Scenery
-				for(int i = 0; i<sizeof(uboFloor.mMat)/sizeof(uboFloor.mMat[0]); i++){
-					uboFloor.mvpMat[i] = Prj * View * uboFloor.mMat[i];
-				}	
+				uboFloor.mvpMat[0] = Prj * View * uboFloor.mMat[0];	
 				DSFloor.map(currentImage, &uboFloor, sizeof(uboFloor), 0);
 
-				for(int i = 0; i<sizeof(uboCorner.mMat)/sizeof(uboCorner.mMat[0]); i++){
+				for(int i = 0; i<cornerCount; i++){
 					uboCorner.mvpMat[i] = Prj * View * uboCorner.mMat[i];
 				}
 				DSCorner.map(currentImage, &uboCorner, sizeof(uboCorner), 0);
 
-				for(int i = 0; i<sizeof(uboBrickCorner.mMat)/sizeof(uboBrickCorner.mMat[0]); i++){
+				for(int i = 0; i<brickCornerCount; i++){
 					uboBrickCorner.mvpMat[i] = Prj * View * uboBrickCorner.mMat[i];
 				}
 				DSBrickCorner.map(currentImage, &uboBrickCorner, sizeof(uboBrickCorner), 0);
 
-				for(int i = 0; i<sizeof(uboWall.mMat)/sizeof(uboWall.mMat[0]); i++){
+				for(int i = 0; i<wallCount; i++){
 					uboWall.mvpMat[i] = Prj * View * uboWall.mMat[i];
 				}
 				DSWall.map(currentImage, &uboWall, sizeof(uboWall), 0);
 
-				for(int i = 0; i<sizeof(uboBrickWall.mMat)/sizeof(uboBrickWall.mMat[0]); i++){
+				for(int i = 0; i<brickWallCount; i++){
 					uboBrickWall.mvpMat[i] = Prj * View * uboBrickWall.mMat[i];
 				}
 				DSBrickWall.map(currentImage, &uboBrickWall, sizeof(uboBrickWall), 0);
+
 
 				uboCellBars.mvpMat[0] = Prj * View *  uboCellBars.mMat[0];
 				uboCellBars.mvpMat[1] = Prj * View *  uboCellBars.mMat[1];
@@ -565,9 +598,14 @@ class Project : public BaseProject {
 				playables[0].ubo.mvpMat = Prj * View * playables[0].ubo.mMat;
 				DSStatue0.map(currentImage, &playables[0].ubo, sizeof(playables[0].ubo), 0);
 
-				//playables[1].ubo.mMat *= glm::rotate(glm::mat4(1),glm::radians(180.0f),glm::vec3(0,1,0));
 				playables[1].ubo.mvpMat = Prj * View * playables[1].ubo.mMat;
 				DSStatue1.map(currentImage, &playables[1].ubo, sizeof(playables[1].ubo), 0);
+
+				playables[2].ubo.mvpMat = Prj * View * playables[2].ubo.mMat;
+				DSStatue2.map(currentImage, &playables[2].ubo, sizeof(playables[2].ubo), 0);
+
+				playables[3].ubo.mvpMat = Prj * View * playables[3].ubo.mMat;
+				DSStatue3.map(currentImage, &playables[3].ubo, sizeof(playables[3].ubo), 0);
 
 				//Crosshair
 				uboCrosshair.visible = 1.0f;
@@ -627,7 +665,7 @@ PlayerData initData(Model<VertexMesh> &Model, int scene, glm::mat4 world, float 
 //Create World Matrix given position and rotation
 glm::mat4 getWorld(glm::vec3 pos, glm::vec3 rot){
 	return 	glm::translate(glm::mat4(1.0f), pos) *
-        	glm::rotate(glm::mat4(1.0f), rot.x, glm::vec3(1.0f, 0.0f, 0.0f)) *
-            glm::rotate(glm::mat4(1.0f), rot.y, glm::vec3(0.0f, 1.0f, 0.0f)) *
+			glm::rotate(glm::mat4(1.0f), rot.y, glm::vec3(0.0f, 1.0f, 0.0f)) *
+        	glm::rotate(glm::mat4(1.0f), rot.x, glm::vec3(1.0f, 0.0f, 0.0f)) *           
             glm::rotate(glm::mat4(1.0f), rot.z, glm::vec3(0.0f, 0.0f, 1.0f));
 }

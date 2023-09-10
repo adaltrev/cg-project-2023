@@ -9,3 +9,4 @@ shaders/MeshFrag.spv
 shaders/MeshVert.spv
 models/2.obj
 .vscode/settings.json
+*.mtl
