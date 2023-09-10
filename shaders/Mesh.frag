@@ -2,7 +2,7 @@
 #extension GL_ARB_separate_shader_objects : enable
 
 const int numInstances = 30;
-const int numPointLights = 6;
+const int numPointLights = 1;
 const float beta = 4.0f;
 const float g = 1.5;	
 
@@ -29,6 +29,7 @@ layout(set = 1, binding = 0) uniform UniformBufferObject {
 	mat4 mvpMat[numInstances];
 	mat4 mMat[numInstances];
 	mat4 nMat[numInstances];
+	vec3 emission;
 } ubo;
 
 layout(set = 1, binding = 1) uniform sampler2D tex;

@@ -11,6 +11,7 @@ layout(set = 1, binding = 0) uniform UniformBufferObject {
 	mat4 mvpMat[numInstances];
 	mat4 mMat[numInstances];
 	mat4 nMat[numInstances];
+	vec3 emission;
 } ubo;
 
 layout(location = 0) in vec3 inPosition;

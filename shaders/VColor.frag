@@ -2,7 +2,7 @@
 #extension GL_ARB_separate_shader_objects : enable
 
 const int numInstances = 30;
-const int numPointLights = 6;
+const int numPointLights = 1;
 const float beta = 4.0f;
 const float g = 1.5;	
 
@@ -13,7 +13,6 @@ layout(location = 2) in vec3 fragColor;
 layout(location = 0) out vec4 outColor;
 
 layout(set = 0, binding = 0) uniform GlobalUniformBufferObject {
-
 	vec3 DlightDir;
 	vec3 DlightColor;
 	vec3 AmbLightColor;	
@@ -30,6 +29,7 @@ layout(set = 1, binding = 0) uniform UniformBufferObject {
 	mat4 mvpMat[numInstances];
 	mat4 mMat[numInstances];
 	mat4 nMat[numInstances];
+	vec3 emission;
 } ubo;
 
 vec3 BRDF(vec3 V, vec3 N, vec3 L, vec3 MD, float sigma);

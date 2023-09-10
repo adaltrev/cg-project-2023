@@ -8,13 +8,15 @@ void LevelCreation(Project *A){
     Model<VertexMesh> &MCellBars = A->MCellBars;
     Model<VertexMesh> &MBarrel = A->MBarrel;
     Model<VertexVColor> &MFloor = A->MFloor;
+    Model<VertexVColor> &MExit = A->MExit;
     MeshUniformBlock &uboWall = A->uboWall;  
     MeshUniformBlock &uboCorner = A->uboCorner; 
     MeshUniformBlock &uboBrickWall = A->uboBrickWall; 
     MeshUniformBlock &uboBrickCorner = A->uboBrickCorner; 
     MeshUniformBlock &uboCellBars = A->uboCellBars; 
     MeshUniformBlock &uboFloor = A->uboFloor;
-    MeshUniformBlock &uboBarrel = A->uboBarrel;  
+    MeshUniformBlock &uboBarrel = A->uboBarrel;
+    MeshUniformBlock &uboExit = A->uboExit;  
 
     //Scenery
     //Wall
@@ -166,7 +168,6 @@ void LevelCreation(Project *A){
     MFloor.indices.push_back(8); MFloor.indices.push_back(9); MFloor.indices.push_back(10); 
     MFloor.indices.push_back(10); MFloor.indices.push_back(11); MFloor.indices.push_back(8);
 
-
     //Ceiling
     MFloor.vertices.push_back({{10.0f,2.5f,0.0f},{0.0f,-1.0f,0.0f},{fColor,fColor,fColor}});
     MFloor.vertices.push_back({{10.0f,2.5f,13.5f},{0.0f,-1.0f,0.0f},{fColor,fColor,fColor}});
@@ -192,8 +193,120 @@ void LevelCreation(Project *A){
     MFloor.indices.push_back(20); MFloor.indices.push_back(21); MFloor.indices.push_back(22); 
     MFloor.indices.push_back(22); MFloor.indices.push_back(23); MFloor.indices.push_back(20);
 
+    //Hole
+    MFloor.vertices.push_back({{-1.5f,0.f,-5.0f},{0.0f,0.0f,-1.0f},{fColor,fColor,fColor}});
+    MFloor.vertices.push_back({{-4.0f,0.f,-5.0f},{0.0f,0.0f,-1.0f},{fColor,fColor,fColor}});
+    MFloor.vertices.push_back({{-1.5f,-4.f,-5.0f},{0.0f,0.0f,-1.0f},{fColor,fColor,fColor}});
+    MFloor.vertices.push_back({{-4.0f,-4.f,-5.0f},{0.0f,0.0f,-1.0f},{fColor,fColor,fColor}});
+
+    MFloor.indices.push_back(24); MFloor.indices.push_back(25); MFloor.indices.push_back(26); 
+    MFloor.indices.push_back(25); MFloor.indices.push_back(26); MFloor.indices.push_back(27);
+
+    MFloor.vertices.push_back({{-1.5f,0.f,-7.0f},{0.0f,0.0f,1.0f},{fColor,fColor,fColor}});
+    MFloor.vertices.push_back({{-4.0f,0.f,-7.0f},{0.0f,0.0f,1.0f},{fColor,fColor,fColor}});
+    MFloor.vertices.push_back({{-1.5f,-4.f,-7.0f},{0.0f,0.0f,1.0f},{fColor,fColor,fColor}});
+    MFloor.vertices.push_back({{-4.0f,-4.f,-7.0f},{0.0f,0.0f,1.0f},{fColor,fColor,fColor}});
+
+    MFloor.indices.push_back(28); MFloor.indices.push_back(29); MFloor.indices.push_back(30); 
+    MFloor.indices.push_back(29); MFloor.indices.push_back(30); MFloor.indices.push_back(31);
+
+    MFloor.vertices.push_back({{-1.5f,0.f,-5.0f},{-1.0f,0.0f,0.0f},{fColor,fColor,fColor}});
+    MFloor.vertices.push_back({{-1.5f,0.f,-7.0f},{-1.0f,0.0f,0.0f},{fColor,fColor,fColor}});
+    MFloor.vertices.push_back({{-1.5f,-4.f,-5.0f},{-1.0f,0.0f,0.0f},{fColor,fColor,fColor}});
+    MFloor.vertices.push_back({{-1.5f,-4.f,-7.0f},{-1.0f,0.0f,0.0f},{fColor,fColor,fColor}});
+
+    MFloor.indices.push_back(32); MFloor.indices.push_back(33); MFloor.indices.push_back(34); 
+    MFloor.indices.push_back(33); MFloor.indices.push_back(34); MFloor.indices.push_back(35);
+
+    MFloor.vertices.push_back({{-4.f,0.f,-5.0f},{1.0f,0.0f,0.0f},{fColor,fColor,fColor}});
+    MFloor.vertices.push_back({{-4.f,0.f,-7.0f},{1.0f,0.0f,0.0f},{fColor,fColor,fColor}});
+    MFloor.vertices.push_back({{-4.f,-4.f,-5.0f},{1.0f,0.0f,0.0f},{fColor,fColor,fColor}});
+    MFloor.vertices.push_back({{-4.f,-4.f,-7.0f},{1.0f,0.0f,0.0f},{fColor,fColor,fColor}});
+
+    MFloor.indices.push_back(36); MFloor.indices.push_back(37); MFloor.indices.push_back(38); 
+    MFloor.indices.push_back(37); MFloor.indices.push_back(38); MFloor.indices.push_back(39);
+
+    MFloor.vertices.push_back({{-1.5f,-4.f,-5.0f},{0.0f,1.0f,0.0f},{fColor,fColor,fColor}});
+    MFloor.vertices.push_back({{-1.5f,-4.f,-7.0f},{0.0f,1.0f,0.0f},{fColor,fColor,fColor}});
+    MFloor.vertices.push_back({{-4.f,-4.f,-5.0f},{0.0f,1.0f,0.0f},{fColor,fColor,fColor}});
+    MFloor.vertices.push_back({{-4.f,-4.f,-7.0f},{0.0f,1.0f,0.0f},{fColor,fColor,fColor}});
+
+    MFloor.indices.push_back(40); MFloor.indices.push_back(41); MFloor.indices.push_back(42); 
+    MFloor.indices.push_back(41); MFloor.indices.push_back(42); MFloor.indices.push_back(43);
+
     
     uboFloor.amb = 1.0f; uboFloor.gamma = 180.0f; uboFloor.sColor = glm::vec3(1); uboFloor.visible = 1.0f;
     uboFloor.mMat[0]=glm::mat4(1); 
     uboFloor.nMat[0]=glm::inverse(glm::transpose(uboFloor.mMat[0]));
+
+
+    //Exit
+    MExit.vertices.push_back({{1.3f,-0.1,-16.6f},{0.0f,0.0f,1.0f},{1.0, 0.3, 0.0}});
+    MExit.vertices.push_back({{6.3f,-0.1,-16.6f},{0.0f,0.0f,1.0f},{1.0, 0.3, 0.0}});
+    MExit.vertices.push_back({{1.3f,3,-16.6f},{0.0f,0.0f,1.0f},{1.0, 0.3, 0.0}});
+    MExit.vertices.push_back({{6.3f,3,-16.6f},{0.0f,0.0f,1.0f},{1.0, 0.3, 0.0}});
+
+    MExit.indices.push_back(0); MExit.indices.push_back(1); MExit.indices.push_back(2); 
+    MExit.indices.push_back(1); MExit.indices.push_back(2); MExit.indices.push_back(3);
+
+    uboExit.amb = 1.0f; uboExit.gamma = 180.0f; uboExit.sColor = glm::vec3(1); uboExit.visible = 1.0f;
+   	uboExit.mMat[0]=glm::mat4(1); 
+    uboExit.nMat[0]=glm::inverse(glm::transpose(uboExit.mMat[0]));
+
+
+
+
+    //Level 2;
+    Model<VertexVColor> &MFloor2 = A->MFloor2;
+    MeshUniformBlock &uboWall2 = A->uboWall2;  
+    MeshUniformBlock &uboCorner2 = A->uboCorner2; 
+    MeshUniformBlock &uboFloor2 = A->uboFloor2;
+
+    uboWall2.amb = 1.0f; uboWall2.gamma = 180.0f; uboWall2.sColor = glm::vec3(1.0f); uboWall2.visible = 1.0f;
+    uboWall2.mMat[0] = getWorld(glm::vec3(10,0,4),glm::vec3(0, glm::radians(-90.f), 0));
+    uboWall2.mMat[1] = getWorld(glm::vec3(10,0,6),glm::vec3(0, glm::radians(-90.f), 0));
+    uboWall2.mMat[2] = getWorld(glm::vec3(4,0,0),glm::vec3(0));
+    uboWall2.mMat[3] = getWorld(glm::vec3(6,0,0),glm::vec3(0));
+    uboWall2.mMat[4] = getWorld(glm::vec3(4,0,10),glm::vec3(0, glm::radians(180.f), 0));
+    uboWall2.mMat[5] = getWorld(glm::vec3(6,0,10),glm::vec3(0, glm::radians(180.f), 0));
+    uboWall2.mMat[6] = getWorld(glm::vec3(0,0,2),glm::vec3(0, glm::radians(90.f), 0));
+    uboWall2.mMat[7] = getWorld(glm::vec3(0,0,8),glm::vec3(0, glm::radians(90.f), 0));
+    for(int i=0; i<8; i++){
+        uboWall2.nMat[i] = glm::inverse(glm::transpose(uboWall2.mMat[i]));
+    }
+
+    uboCorner2.amb = 1.0f; uboCorner2.gamma = 180.0f; uboCorner2.sColor = glm::vec3(1.0f); uboCorner2.visible = 1.0f;
+    uboCorner2.mMat[0] = getWorld(glm::vec3(0,0,10),glm::vec3(0, glm::radians(90.f), 0));;
+    uboCorner2.mMat[1] = getWorld(glm::vec3(10,0,10),glm::vec3(0, glm::radians(180.f), 0));
+    uboCorner2.mMat[2] = getWorld(glm::vec3(0,0,0),glm::vec3(0));
+    uboCorner2.mMat[3] = getWorld(glm::vec3(10,0,0),glm::vec3(0, glm::radians(-90.f), 0));
+    for(int i=0; i<4; i++){
+        uboCorner2.nMat[i] = glm::inverse(glm::transpose(uboCorner2.mMat[i]));
+    }
+
+    //Floor
+    MFloor2.vertices.push_back({{10.0f,0.0f,0.0f},{0.0f,1.0f,0.0f},{fColor,fColor,fColor}});
+    MFloor2.vertices.push_back({{10.0f,0.0f,10.0f},{0.0f,1.0f,0.0f},{fColor,fColor,fColor}});
+    MFloor2.vertices.push_back({{0.0f,0.0f,10.0f},{0.0f,1.0f,0.0f},{fColor,fColor,fColor}});
+    MFloor2.vertices.push_back({{0.0f,0.0f,0.0f},{0.0f,1.0f,0.0f},{fColor,fColor,fColor}});
+
+    MFloor2.indices.push_back(0); MFloor2.indices.push_back(1); MFloor2.indices.push_back(2); 
+    MFloor2.indices.push_back(2); MFloor2.indices.push_back(3); MFloor2.indices.push_back(0);
+
+    //Ceiling
+    MFloor2.vertices.push_back({{10.0f,2.5f,0.0f},{0.0f,-1.0f,0.0f},{fColor,fColor,fColor}});
+    MFloor2.vertices.push_back({{10.0f,2.5f,10.0f},{0.0f,-1.0f,0.0f},{fColor,fColor,fColor}});
+    MFloor2.vertices.push_back({{0.0f,2.5f,10.0f},{0.0f,-1.0f,0.0f},{fColor,fColor,fColor}});
+    MFloor2.vertices.push_back({{0.0f,2.5f,0.0f},{0.0f,-1.0f,0.0f},{fColor,fColor,fColor}});
+
+    MFloor2.indices.push_back(4); MFloor2.indices.push_back(5); MFloor2.indices.push_back(6); 
+    MFloor2.indices.push_back(6); MFloor2.indices.push_back(7); MFloor2.indices.push_back(4);
+
+    uboFloor2.amb = 1.0f; uboFloor2.gamma = 180.0f; uboFloor2.sColor = glm::vec3(1); uboFloor2.visible = 1.0f;
+    uboFloor2.mMat[0]=glm::mat4(1); 
+    uboFloor2.nMat[0]=glm::inverse(glm::transpose(uboFloor2.mMat[0]));
+}
+
+void switchScene(Project *A){
+
 }
