@@ -10,3 +10,6 @@ shaders/MeshVert.spv
 models/2.obj
 .vscode/settings.json
 *.mtl
+copy.obj
+shaders/VColorFrag.spv
+shaders/VColorVert.spv

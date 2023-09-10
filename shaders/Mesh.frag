@@ -2,7 +2,7 @@
 #extension GL_ARB_separate_shader_objects : enable
 
 const int numInstances = 30;
-//const int numPointLights = 30;
+const int numPointLights = 6;
 const float beta = 2.0f;
 const float g = 0.5;	
 
@@ -18,7 +18,7 @@ layout(set = 0, binding = 0) uniform GlobalUniformBufferObject {
 	vec3 DlightColor;
 	vec3 AmbLightColor;	
 	vec3 eyePos;
-	vec3 PlightPos;
+	vec3 PlightPos[numPointLights];
 	vec3 PlightColor;		
 } gubo;
 
@@ -37,13 +37,21 @@ layout(set = 1, binding = 1) uniform sampler2D tex;
 void main() {
 	vec3 N = normalize(fragNorm);				
 	vec3 V = normalize(gubo.eyePos - fragPos);	
-	vec3 L = normalize(gubo.PlightPos - fragPos);
-	vec3 lightColor = gubo.PlightColor.xyz * pow(g/length(gubo.PlightPos - fragPos), beta);			
-	
-	vec3 MD = texture(tex, fragUV).rgb * 0.99f * clamp(dot(N, L),0.0,1.0);;
-	vec3 MS = vec3(pow(clamp(dot(N, normalize(L + V)),0.0,1.0), 160.0f));;
-	vec3 MA = texture(tex, fragUV).rgb * gubo.AmbLightColor;
-	
-	outColor = vec4(clamp((MD + MS) * lightColor.rgb + MA,0.0,1.0), 1.0f);
 
-}	
+	vec3 finalColor = vec3(0.0);
+
+	for(int i = 0; i < numPointLights; i++){
+		vec3 L = normalize(gubo.PlightPos[i] - fragPos);
+		vec3 lightColor = gubo.PlightColor.xyz * pow(g/length(gubo.PlightPos[i] - fragPos), beta);			
+	
+		vec3 MD = texture(tex, fragUV).rgb * 0.99f * clamp(dot(N, L),0.0,1.0);;
+		vec3 MS = vec3(pow(clamp(dot(N, normalize(L + V)),0.0,1.0), 160.0f));;
+		vec3 MA = texture(tex, fragUV).rgb * gubo.AmbLightColor;
+		
+		finalColor += (MD + MS) * lightColor.rgb + MA;
+	}
+	finalColor = clamp(finalColor, 0.0, 1.0);
+
+	outColor = vec4(finalColor, 1.0f);
+
+}

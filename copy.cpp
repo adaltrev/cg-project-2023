@@ -9,7 +9,7 @@
 //        mat4  : alignas(16)
 
 const int numInstances = 30;
-//const int numPointLights = 30;
+const int numPointLights = 6;
 const float camHeight = 1.85f;
 
 struct MeshUniformBlock {
@@ -42,7 +42,7 @@ struct GlobalUniformBlock {
 	alignas(16) glm::vec3 DlightColor;
 	alignas(16) glm::vec3 AmbLightColor;
 	alignas(16) glm::vec3 eyePos;
-	alignas(16) glm::vec3 PlightPos;
+	alignas(16) glm::vec3 PlightPos[numPointLights];
 	alignas(16) glm::vec3 PlightColor;
 };
 
@@ -606,7 +606,13 @@ class Project : public BaseProject {
 		gubo.AmbLightColor = glm::vec3(0.1f);
 		gubo.eyePos = camPos;
 		gubo.PlightColor = glm::vec3(1.0, 0.5, 0.0);
-		gubo.PlightPos = glm::vec3(-3.6,1.75,-0.5); 
+		gubo.PlightPos[0] = glm::vec3(-3.6,1.75,-2.4); 
+		gubo.PlightPos[1] = glm::vec3(-1.7, 1.75, -2.4);
+		gubo.PlightPos[2] = glm::vec3( 1.5, 0.25, 6.5); 
+		gubo.PlightPos[3] = glm::vec3(6.5, 0.25, 1.5);
+		gubo.PlightPos[4] = glm::vec3(-0.7, 0.25, 12.5); 
+		gubo.PlightPos[5] = glm::vec3(2.5, 0.25, -14.5);
+
 		DSGubo.map(currentImage, &gubo, sizeof(gubo), 0);
 
 		//Update uniforms for all object, based on the current scene
