@@ -187,6 +187,16 @@ void GameLogic(Project *A){
                 }
             }
             break;
+        
+        case 2:
+            if(handleFire) {
+                A->currentScene = 0;
+                A->camPos = glm::vec3(9.0f, camHeight, 7.0f);
+                alpha = glm::radians(90.0f);
+                beta = 0.0f;	
+                A->RebuildPipeline();	
+            }
+            break;
     }
 
 }
