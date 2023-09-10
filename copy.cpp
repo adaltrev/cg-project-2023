@@ -347,8 +347,7 @@ class Project : public BaseProject {
 		MCellBars.init(this, &VMesh, "models/tunnel/tunnel.033_Mesh.6508.mgcg", MGCG);
 
 		uboDoor.amb = 1.0f; uboDoor.gamma = 180.0f; uboDoor.sColor = glm::vec3(1.0f); uboDoor.visible = 1.0f;
-		door.startWorld = getWorld(glm::vec3(3.33,0,-16.3),glm::vec3(0,0,0)) * glm::scale(glm::mat4(1),glm::vec3(2,1.1,1));
-		//uboDoor.nMat[0] = glm::inverse(glm::transpose(uboDoor.mMat[0]));
+		door.startWorld = getWorld(glm::vec3(3.33,0,-16.3),glm::vec3(0,0,0));
 		MDoor.init(this, &VMesh, "models/door_019_Mesh.114.mgcg", MGCG);
 			
 	}
@@ -651,9 +650,7 @@ class Project : public BaseProject {
 				DSBarrel.map(currentImage, &uboBarrel, sizeof(uboBarrel), 0);
 
 				//Rotating door
-				glm::mat4 rot = glm::translate(glm::mat4(1),glm::vec3(-0,0,0)) *
-								glm::rotate(glm::mat4(1),-door.rot,glm::vec3(0,1,0)) *
-								glm::translate(glm::mat4(1),glm::vec3(0,0,0));
+				glm::mat4 rot = glm::rotate(glm::mat4(1),-door.rot,glm::vec3(0,1,0)) * glm::scale(glm::mat4(1),glm::vec3(2,1.1,1));								
 				uboDoor.mMat[0] = door.startWorld * rot; 
 				uboDoor.nMat[0] = glm::inverse(glm::transpose(uboDoor.mMat[0]));				
 				uboDoor.mvpMat[0] = Prj * View * uboDoor.mMat[0];
