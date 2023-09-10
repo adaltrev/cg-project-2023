@@ -603,9 +603,9 @@ class Project : public BaseProject {
 		//Update Gubo
 		gubo.DlightDir = glm::normalize(glm::vec3(1, 2, 3));
 		gubo.DlightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-		gubo.AmbLightColor = glm::vec3(0.1f);
+		gubo.AmbLightColor = glm::vec3(0.01f);
 		gubo.eyePos = camPos;
-		gubo.PlightColor = glm::vec3(1.0, 0.5, 0.0);
+		gubo.PlightColor = glm::vec3(1.0, 0.3, 0.0);
 		gubo.PlightPos[0] = glm::vec3(-3.6,1.75,-2.4); 
 		gubo.PlightPos[1] = glm::vec3(-1.7, 1.75, -2.4);
 		gubo.PlightPos[2] = glm::vec3( 1.5, 0.25, 6.5); 

@@ -1,6 +1,6 @@
 const float fov = glm::radians(45.0f);
 const float n = 0.1f;
-const float f = 20.0f;
+const float f = 25.0f;
 const float ROT_SPEED = glm::radians(120.0f);
 const float MOVE_SPEED = 3.0f;
 const float BUTTON_SPEED = 0.1f;
