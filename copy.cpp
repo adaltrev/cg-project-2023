@@ -74,6 +74,20 @@ struct PlayerData{
 	float scale;
 };
 
+struct ButtonData{
+	int status = 0;
+	float pos = 0;
+	glm::mat4 startWorld;
+	glm::vec3 maxVector, minVector;
+};
+
+struct DoorData{
+	int status = 0;
+	float rot = 0;
+	glm::mat4 startWorld;
+};
+
+
 
 class Project;
 void GameLogic(Project *A);
@@ -92,14 +106,20 @@ class Project : public BaseProject {
 	glm::vec4 viewport;
 	glm::vec3 camPos = glm::vec3(9.0f, camHeight, 7.0f);	
 	glm::mat4 View, Prj;
+
 	std::vector<PlayerData> playables;
+	ButtonData button;
+	DoorData door;
 
-	MeshUniformBlock uboWall, uboCorner, uboBrickWall, uboBrickCorner, uboCellBars, uboFloor;
-	Model<VertexMesh> MCorner, MWall, MCellBars, MBrickWall, MBrickCorner;
-	Model<VertexVColor> MFloor;
 	
-	int wallCount, cornerCount, brickWallCount, brickCornerCount, cellBarsCount;
 
+	//Uniform blocks and models
+	MeshUniformBlock uboWall, uboCorner, uboBrickWall, uboBrickCorner, uboCellBars, uboFloor, uboBarrel, uboDoor;
+	Model<VertexMesh> MCorner, MWall, MCellBars, MBrickWall, MBrickCorner, MBarrel, MDoor;
+	Model<VertexVColor> MFloor;
+	int wallCount, cornerCount, brickWallCount, brickCornerCount, cellBarsCount, barrelCount;
+	
+	
 	protected:
 	// Descriptor Layouts
 	DescriptorSetLayout DSLGubo, DSLMesh, DSLOverlay, DSLVColor, DSLPlayer;
@@ -120,13 +140,13 @@ class Project : public BaseProject {
 	Model<VertexMesh> MStatue0, MStatue1, MStatue2, MStatue3;
 
 	DescriptorSet DSGubo, DSMenu, DSCrosshair; 
-	DescriptorSet DSWall, DSCorner, DSBrickWall, DSBrickCorner, DSCellBars, DSFloor; 
+	DescriptorSet DSWall, DSCorner, DSBrickWall, DSBrickCorner, DSCellBars, DSFloor;
+	DescriptorSet DSBarrel, DSDoor; 
 	DescriptorSet DSStatue0, DSStatue1, DSStatue2, DSStatue3;
 
 	Texture TMenu, TCrosshair, TCrosshairAlt, TVarious, TStone;
  	
 	// C++ storage for uniform variables
-	
 	GlobalUniformBlock gubo;
 	OverlayUniformBlock uboMenu, uboCrosshair;
 
@@ -257,6 +277,8 @@ class Project : public BaseProject {
 		// The last array, is a vector of pointer to the layouts of the sets that will
 		// be used in this pipeline. The first element will be set 0, and so on..
 		PMesh.init(this, &VMesh, "shaders/MeshVert.spv", "shaders/MeshFrag.spv", {&DSLGubo, &DSLMesh});
+		/*PMesh.setAdvancedFeatures(VK_COMPARE_OP_ALWAYS, VK_POLYGON_MODE_FILL,
+ 								    VK_CULL_MODE_NONE, true);*/
 		PPlayer.init(this, &VMesh, "shaders/PlayerVert.spv", "shaders/PlayerFrag.spv", {&DSLGubo, &DSLPlayer});
 		POverlay.init(this, &VOverlay, "shaders/OverlayVert.spv", "shaders/OverlayFrag.spv", {&DSLOverlay});
 		POverlay.setAdvancedFeatures(VK_COMPARE_OP_ALWAYS, VK_POLYGON_MODE_FILL,
@@ -315,6 +337,7 @@ class Project : public BaseProject {
 		playables[3].angles=glm::vec2(glm::radians(90.f),0);
 		
 		//Level scenery objects
+		MBarrel.init(this, &VMesh, "models/barrel.001.mgcg", MGCG);	
 		LevelCreation(this);
 		MFloor.initMesh(this, &VVColor);
 		MCorner.init(this, &VMesh, "models/tunnel/tunnel.029_Mesh.6128.mgcg", MGCG);
@@ -322,6 +345,12 @@ class Project : public BaseProject {
 		MBrickWall.init(this, &VMesh, "models/tunnel/tunnel.031_Mesh.7927.mgcg", MGCG);
 		MBrickCorner.init(this, &VMesh, "models/tunnel/tunnel.030_Mesh.7968.mgcg", MGCG);
 		MCellBars.init(this, &VMesh, "models/tunnel/tunnel.033_Mesh.6508.mgcg", MGCG);
+
+		uboDoor.amb = 1.0f; uboDoor.gamma = 180.0f; uboDoor.sColor = glm::vec3(1.0f); uboDoor.visible = 1.0f;
+		door.startWorld = getWorld(glm::vec3(3.33,0,-16.3),glm::vec3(0,0,0)) * glm::scale(glm::mat4(1),glm::vec3(2,1.1,1));
+		//uboDoor.nMat[0] = glm::inverse(glm::transpose(uboDoor.mMat[0]));
+		MDoor.init(this, &VMesh, "models/door_019_Mesh.114.mgcg", MGCG);
+			
 	}
 	
 
@@ -384,7 +413,18 @@ class Project : public BaseProject {
 		DSBrickCorner.init(this, &DSLMesh, {
 					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
 					{1, TEXTURE, 0, &TVarious}
-		});										
+		});
+		DSBarrel.init(this, &DSLMesh, {
+					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
+					{1, TEXTURE, 0, &TVarious}
+		});
+		DSDoor.init(this, &DSLMesh, {
+					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
+					{1, TEXTURE, 0, &TVarious}
+		});
+
+
+
 		DSGubo.init(this, &DSLGubo, {
 					{0, UNIFORM, sizeof(GlobalUniformBlock), nullptr}
 				});
@@ -420,6 +460,8 @@ class Project : public BaseProject {
 		DSCellBars.cleanup();
 		DSBrickWall.cleanup();
 		DSBrickCorner.cleanup();
+		DSBarrel.cleanup();
+		DSDoor.cleanup();
 		DSGubo.cleanup();
 	}
 
@@ -448,6 +490,8 @@ class Project : public BaseProject {
 		MFloor.cleanup();
 		MBrickWall.cleanup();
 		MBrickCorner.cleanup();
+		MBarrel.cleanup();
+		MDoor.cleanup();
 
 		// Cleanup descriptor set layouts
 		DSLMesh.cleanup();
@@ -519,7 +563,16 @@ class Project : public BaseProject {
 				MBrickWall.bind(commandBuffer);
 				DSBrickWall.bind(commandBuffer, PMesh, 1, currentImage);	
 				vkCmdDrawIndexed(commandBuffer,
-					static_cast<uint32_t>(MBrickWall.indices.size()), brickWallCount, 0, 0, 0);	
+					static_cast<uint32_t>(MBrickWall.indices.size()), brickWallCount, 0, 0, 0);
+				MBarrel.bind(commandBuffer);
+				DSBarrel.bind(commandBuffer, PMesh, 1, currentImage);	
+				vkCmdDrawIndexed(commandBuffer,
+					static_cast<uint32_t>(MBarrel.indices.size()), barrelCount, 0, 0, 0);
+
+				MDoor.bind(commandBuffer);
+				DSDoor.bind(commandBuffer, PMesh, 1, currentImage);	
+				vkCmdDrawIndexed(commandBuffer,
+					static_cast<uint32_t>(MDoor.indices.size()), 1, 0, 0, 0);			
 				
 				//VColor
 				DSGubo.bind(commandBuffer,PVColor,0,currentImage);
@@ -588,6 +641,23 @@ class Project : public BaseProject {
 					uboBrickWall.mvpMat[i] = Prj * View * uboBrickWall.mMat[i];
 				}
 				DSBrickWall.map(currentImage, &uboBrickWall, sizeof(uboBrickWall), 0);
+
+				//Button (and barrels)
+				uboBarrel.mMat[0] = glm::translate(button.startWorld, glm::vec3(0,-button.pos,0)); 
+				uboBarrel.nMat[0] = glm::inverse(glm::transpose(uboBarrel.mMat[0]));
+				for(int i = 0; i<barrelCount; i++){
+					uboBarrel.mvpMat[i] = Prj * View * uboBarrel.mMat[i];
+				}
+				DSBarrel.map(currentImage, &uboBarrel, sizeof(uboBarrel), 0);
+
+				//Rotating door
+				glm::mat4 rot = glm::translate(glm::mat4(1),glm::vec3(-0,0,0)) *
+								glm::rotate(glm::mat4(1),-door.rot,glm::vec3(0,1,0)) *
+								glm::translate(glm::mat4(1),glm::vec3(0,0,0));
+				uboDoor.mMat[0] = door.startWorld * rot; 
+				uboDoor.nMat[0] = glm::inverse(glm::transpose(uboDoor.mMat[0]));				
+				uboDoor.mvpMat[0] = Prj * View * uboDoor.mMat[0];
+				DSDoor.map(currentImage, &uboDoor, sizeof(uboDoor), 0);
 
 
 				uboCellBars.mvpMat[0] = Prj * View *  uboCellBars.mMat[0];

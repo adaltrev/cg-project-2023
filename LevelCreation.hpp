@@ -6,13 +6,15 @@ void LevelCreation(Project *A){
     Model<VertexMesh> &MCorner = A->MCorner;
     Model<VertexMesh> &MBrickCorner = A->MBrickCorner;
     Model<VertexMesh> &MCellBars = A->MCellBars;
+    Model<VertexMesh> &MBarrel = A->MBarrel;
     Model<VertexVColor> &MFloor = A->MFloor;
     MeshUniformBlock &uboWall = A->uboWall;  
     MeshUniformBlock &uboCorner = A->uboCorner; 
     MeshUniformBlock &uboBrickWall = A->uboBrickWall; 
     MeshUniformBlock &uboBrickCorner = A->uboBrickCorner; 
     MeshUniformBlock &uboCellBars = A->uboCellBars; 
-    MeshUniformBlock &uboFloor = A->uboFloor; 
+    MeshUniformBlock &uboFloor = A->uboFloor;
+    MeshUniformBlock &uboBarrel = A->uboBarrel;  
 
     //Scenery
     //Wall
@@ -117,6 +119,26 @@ void LevelCreation(Project *A){
         uboCellBars.nMat[i] = glm::inverse(glm::transpose(uboCellBars.mMat[i]));
     }
 
+
+    //Barrels
+    uboBarrel.amb = 1.0f; uboBarrel.gamma = 180.0f; uboBarrel.sColor = glm::vec3(1.0f); uboBarrel.visible = 1.0f;
+    A->button.startWorld = getWorld(glm::vec3(8.11,3.6,-16.2),glm::vec3(glm::radians(90.f), 0, 0)); //button
+
+    A->barrelCount = 1;
+    for(int i=1; i<A->cellBarsCount; i++){
+        uboBarrel.nMat[i] = glm::inverse(glm::transpose(uboBarrel.mMat[i]));
+    }
+
+        //Initialize AABB for button interaction
+    glm::vec3 minVector = glm::vec3(std::numeric_limits<float>::max());
+    glm::vec3 maxVector = glm::vec3(-std::numeric_limits<float>::max());
+    for(int i=0; i<MBarrel.vertices.size(); i++){   
+        glm::vec3 vertexPosition = MBarrel.vertices[i].pos;			
+        minVector = glm::min(minVector, vertexPosition);
+        maxVector = glm::max(maxVector, vertexPosition);        
+    }
+    A->button.minVector = glm::vec3(A->button.startWorld * glm::vec4(minVector,1.0));
+    A->button.maxVector = glm::vec3(A->button.startWorld * glm::vec4(maxVector,1.0));
     
     
     //Floor
@@ -174,6 +196,4 @@ void LevelCreation(Project *A){
     uboFloor.amb = 1.0f; uboFloor.gamma = 180.0f; uboFloor.sColor = glm::vec3(1); uboFloor.visible = 1.0f;
     uboFloor.mMat[0]=glm::mat4(1); 
     uboFloor.nMat[0]=glm::inverse(glm::transpose(uboFloor.mMat[0]));
-   
-
 }
