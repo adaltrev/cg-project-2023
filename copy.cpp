@@ -9,7 +9,7 @@
 //        mat4  : alignas(16)
 
 const int numInstances = 30;
-const int numPointLights = 6;
+const int numPointLights = 10;
 const float camHeight = 1.85f;
 
 struct MeshUniformBlock {
@@ -116,10 +116,10 @@ class Project : public BaseProject {
 	
 
 	//Uniform blocks and models
-	MeshUniformBlock uboWall, uboCorner, uboBrickWall, uboBrickCorner, uboCellBars, uboFloor, uboBarrel, uboDoor, uboExit;
-	Model<VertexMesh> MCorner, MWall, MCellBars, MBrickWall, MBrickCorner, MBarrel, MDoor;
+	MeshUniformBlock uboWall, uboCorner, uboBrickWall, uboBrickCorner, uboCellBars, uboFloor, uboBarrel, uboDoor, uboExit, uboTorch, uboCandle;
+	Model<VertexMesh> MCorner, MWall, MCellBars, MBrickWall, MBrickCorner, MBarrel, MDoor, MTorch, MCandle;
 	Model<VertexVColor> MFloor, MExit;
-	int wallCount, cornerCount, brickWallCount, brickCornerCount, cellBarsCount, barrelCount;
+	int wallCount, cornerCount, brickWallCount, brickCornerCount, cellBarsCount, barrelCount, torchCount, candleCount;
 	
 	Model<VertexMesh> MCorner2, MWall2, MGrass;
 	Model<VertexVColor> MFloor2;
@@ -147,7 +147,7 @@ class Project : public BaseProject {
 
 	DescriptorSet DSGubo, DSMenu, DSCrosshair; 
 	DescriptorSet DSWall, DSCorner, DSBrickWall, DSBrickCorner, DSCellBars, DSFloor, DSExit;
-	DescriptorSet DSBarrel, DSDoor; 
+	DescriptorSet DSBarrel, DSDoor, DSTorch, DSCandle; 
 	DescriptorSet DSStatue0, DSStatue1, DSStatue2, DSStatue3;
 
 	
@@ -307,14 +307,20 @@ class Project : public BaseProject {
 		//Init gubo
 		gubo.DlightDir = glm::normalize(glm::vec3(1, 2, 3));
 		gubo.DlightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-		gubo.AmbLightColor = glm::vec3(0.1f);
+		gubo.AmbLightColor = glm::vec3(0.01f);
 		gubo.PlightColor = glm::vec3(1.0, 0.3, 0.0);
-		gubo.PlightPos[0] = glm::vec3(-3.6,1.75,-2.4); 
-		gubo.PlightPos[1] = glm::vec3(-1.7, 1.75, -2.4);
-		gubo.PlightPos[2] = glm::vec3( 1.5, 0.25, 6.5); 
-		gubo.PlightPos[3] = glm::vec3(6.5, 0.25, 1.5);
-		gubo.PlightPos[4] = glm::vec3(-0.7, 0.25, 12.5); 
-		gubo.PlightPos[5] = glm::vec3(2.5, 0.25, -14.5);
+		
+		gubo.PlightPos[0] = glm::vec3(-2.8,1.75,-0.7); 
+		gubo.PlightPos[1] = glm::vec3(-2.4, 1.75, -0.7);
+		gubo.PlightPos[2] = glm::vec3( 1.5, 0.6, 6.5); 
+		gubo.PlightPos[3] = glm::vec3(6.5, 0.6, 1.5);
+		gubo.PlightPos[4] = glm::vec3(-0.7, 0.6, 12.5); 
+		gubo.PlightPos[5] = glm::vec3(3, 1.75, -10.5);
+		gubo.PlightPos[6] = glm::vec3(-4.7, 0.6, 12.5);
+		gubo.PlightPos[7] = glm::vec3(8.1, 3.25, -9.6);
+		gubo.PlightPos[8] = glm::vec3(5.5, 1.75, -14.5);
+		gubo.PlightPos[9] = glm::vec3(-2.8,1.75,-5.7);
+
 
 		// Create the models
 		// Menu
@@ -369,6 +375,8 @@ class Project : public BaseProject {
 		MBrickWall.init(this, &VMesh, "models/tunnel/tunnel.031_Mesh.7927.mgcg", MGCG);
 		MBrickCorner.init(this, &VMesh, "models/tunnel/tunnel.030_Mesh.7968.mgcg", MGCG);
 		MCellBars.init(this, &VMesh, "models/tunnel/tunnel.033_Mesh.6508.mgcg", MGCG);
+		MTorch.init(this, &VMesh, "models/light.002_Mesh.6811.mgcg", MGCG);
+		MCandle.init(this, &VMesh, "models/light.004_Mesh.6798.mgcg", MGCG);
 
 		uboDoor.amb = 1.0f; uboDoor.gamma = 180.0f; uboDoor.sColor = glm::vec3(1.0f); uboDoor.visible = 1.0f;
 		door.startWorld = getWorld(glm::vec3(3.33,0,-16.3),glm::vec3(0,0,0));
@@ -456,8 +464,14 @@ class Project : public BaseProject {
 					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
 					{1, TEXTURE, 0, &TVarious}
 		});
-
-
+		DSTorch.init(this, &DSLMesh, {
+					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
+					{1, TEXTURE, 0, &TVarious}
+		});
+		DSCandle.init(this, &DSLMesh, {
+					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
+					{1, TEXTURE, 0, &TVarious}
+		});
 
 		DSGubo.init(this, &DSLGubo, {
 					{0, UNIFORM, sizeof(GlobalUniformBlock), nullptr}
@@ -516,6 +530,8 @@ class Project : public BaseProject {
 		DSBrickCorner.cleanup();
 		DSBarrel.cleanup();
 		DSDoor.cleanup();
+		DSTorch.cleanup();
+		DSCandle.cleanup();
 		DSGubo.cleanup();
 
 		DSCorner2.cleanup();
@@ -554,6 +570,8 @@ class Project : public BaseProject {
 		MBrickCorner.cleanup();
 		MBarrel.cleanup();
 		MDoor.cleanup();
+		MTorch.cleanup();
+		MCandle.cleanup();
 
 		// Cleanup descriptor set layouts
 		DSLMesh.cleanup();
@@ -635,6 +653,16 @@ class Project : public BaseProject {
 				DSDoor.bind(commandBuffer, PMesh, 1, currentImage);	
 				vkCmdDrawIndexed(commandBuffer,
 					static_cast<uint32_t>(MDoor.indices.size()), 1, 0, 0, 0);			
+				
+				MTorch.bind(commandBuffer);
+				DSTorch.bind(commandBuffer, PMesh, 1, currentImage);	
+				vkCmdDrawIndexed(commandBuffer,
+					static_cast<uint32_t>(MTorch.indices.size()), torchCount, 0, 0, 0);			
+				
+				MCandle.bind(commandBuffer);
+				DSCandle.bind(commandBuffer, PMesh, 1, currentImage);	
+				vkCmdDrawIndexed(commandBuffer,
+					static_cast<uint32_t>(MCandle.indices.size()), candleCount, 0, 0, 0);			
 				
 				//VColor
 				DSGubo.bind(commandBuffer,PVColor,0,currentImage);
@@ -735,6 +763,16 @@ class Project : public BaseProject {
 					uboBrickWall.mvpMat[i] = Prj * View * uboBrickWall.mMat[i];
 				}
 				DSBrickWall.map(currentImage, &uboBrickWall, sizeof(uboBrickWall), 0);
+
+				for(int i = 0; i<torchCount; i++){
+					uboTorch.mvpMat[i] = Prj * View * uboTorch.mMat[i];
+				}
+				DSTorch.map(currentImage, &uboTorch, sizeof(uboTorch), 0);
+
+				for(int i = 0; i<candleCount; i++){
+					uboCandle.mvpMat[i] = Prj * View * uboCandle.mMat[i];
+				}
+				DSCandle.map(currentImage, &uboCandle, sizeof(uboCandle), 0);
 
 				uboCellBars.mvpMat[0] = Prj * View *  uboCellBars.mMat[0];
 				uboCellBars.mvpMat[1] = Prj * View *  uboCellBars.mMat[1];

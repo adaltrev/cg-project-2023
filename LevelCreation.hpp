@@ -16,7 +16,10 @@ void LevelCreation(Project *A){
     MeshUniformBlock &uboCellBars = A->uboCellBars; 
     MeshUniformBlock &uboFloor = A->uboFloor;
     MeshUniformBlock &uboBarrel = A->uboBarrel;
-    MeshUniformBlock &uboExit = A->uboExit;  
+    MeshUniformBlock &uboExit = A->uboExit;
+    MeshUniformBlock &uboTorch = A->uboTorch;  
+    MeshUniformBlock &uboCandle = A->uboCandle;  
+  
 
     //Scenery
     //Wall
@@ -142,7 +145,31 @@ void LevelCreation(Project *A){
     A->button.minVector = glm::vec3(A->button.startWorld * glm::vec4(minVector,1.0));
     A->button.maxVector = glm::vec3(A->button.startWorld * glm::vec4(maxVector,1.0));
     
-    
+    //Torches
+    uboTorch.amb = 1.0f; uboTorch.gamma = 180.0f; uboTorch.sColor = glm::vec3(1.0f); uboTorch.visible = 1.0f;
+    uboTorch.mMat[0] = getWorld(glm::vec3(-3.6,1.75,-0.7), glm::vec3(0, glm::radians(90.f), 0));
+    uboTorch.mMat[1] = getWorld(glm::vec3(-1.7, 1.75,-0.7), glm::vec3(0, glm::radians(-90.f), 0));
+    uboTorch.mMat[2] = getWorld(glm::vec3(1.85, 1.75, -10.5), glm::vec3(0, glm::radians(90.f), 0));
+    uboTorch.mMat[3] = getWorld(glm::vec3(6, 1.75, -15.75), glm::vec3(0));
+    uboTorch.mMat[4] = getWorld(glm::vec3(-3.6,1.75,-5.7), glm::vec3(0, glm::radians(90.f), 0));
+
+    A->torchCount = 5;
+    for(int i=0; i<A->torchCount; i++){
+        uboTorch.nMat[i] = glm::inverse(glm::transpose(uboTorch.mMat[i]));
+    }
+
+    //Candles 
+    uboCandle.amb = 1.0f; uboCandle.gamma = 180.0f; uboCandle.sColor = glm::vec3(1.0f); uboCandle.visible = 1.0f;
+    uboCandle.mMat[0] = getWorld(glm::vec3(1.5, 0.15, 6.5), glm::vec3(0));
+    uboCandle.mMat[1] = getWorld(glm::vec3(6.5, 0.15, 1.5), glm::vec3(0));
+    uboCandle.mMat[2] = getWorld(glm::vec3(-0.7, 0.15, 12.5), glm::vec3(0));
+    uboCandle.mMat[3] = getWorld(glm::vec3(-4.7, 0.15, 12.5), glm::vec3(0));    
+    uboCandle.mMat[4] = getWorld(glm::vec3(8.1, 2.65, -9.6), glm::vec3(0));
+
+    A->candleCount = 5;
+    for(int i=0; i<A->candleCount; i++){
+        uboCandle.nMat[i] = glm::inverse(glm::transpose(uboCandle.mMat[i]));
+    }
     //Floor
     MFloor.vertices.push_back({{10.0f,0.0f,0.0f},{0.0f,1.0f,0.0f},{fColor,fColor,fColor}});
     MFloor.vertices.push_back({{10.0f,0.0f,13.5f},{0.0f,1.0f,0.0f},{fColor,fColor,fColor}});

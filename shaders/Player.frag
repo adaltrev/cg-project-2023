@@ -2,7 +2,7 @@
 #extension GL_ARB_separate_shader_objects : enable
 
 
-const int numPointLights = 6;
+const int numPointLights = 10;
 const float beta = 2.0f;
 const float g = 1.5;	
 
