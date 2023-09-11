@@ -51,7 +51,7 @@ void main() {
 		
 		finalColor += (fdiffuse + fspecular) * lightColor.rgb;
 	}
-		finalColor = clamp(finalColor + MA, 0.0, 1.0);
+	finalColor = clamp(finalColor + MA, 0.0, 1.0);
 
 	outColor = vec4(finalColor, 1.0f);
 

@@ -99,8 +99,6 @@ void GameLogic(Project *A){
         case 1: //Level 1
             if(A->camPos.x<=6.5 && A->camPos.x>=2.5 && A->camPos.y<=2.6 && A->camPos.y>=0.0 && A->camPos.z<=-16.2 && A->camPos.z>=-17.2){
                 A->currentScene = 2;
-                A->cornerCount = 4;
-                A->wallCount = 8;
                 A->camPos = glm::vec3(8.0f, camHeight, 5.0f);
                 alpha = glm::radians(90.0f);
                 beta = 0.0f;

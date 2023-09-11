@@ -22,7 +22,9 @@ void LevelCreation(Project *A){
     MeshUniformBlock &uboSkeleton1 = A->uboSkeleton1;
     MeshUniformBlock &uboSkeleton2 = A->uboSkeleton2;
     MeshUniformBlock &uboBarrels = A->uboBarrels;
+    MeshUniformBlock &uboDoor = A->uboDoor;
 
+    //Scenery
     uboSkeleton1.amb = 1.0f; uboSkeleton1.gamma = 180.0f; uboSkeleton1.sColor = glm::vec3(1); uboSkeleton1.visible = 1.0f;
     uboSkeleton1.mMat[0]=getWorld(glm::vec3(3.8,0,1),glm::vec3(0, glm::radians(0.f), 0));
     uboSkeleton1.nMat[0]=glm::inverse(glm::transpose(uboSkeleton1.mMat[0]));
@@ -35,7 +37,7 @@ void LevelCreation(Project *A){
     uboBarrels.mMat[0]=getWorld(glm::vec3(9.2,0.5,8),glm::vec3(0, glm::radians(-90.f), 0));
     uboBarrels.nMat[0]=glm::inverse(glm::transpose(uboBarrels.mMat[0]));  
 
-    //Scenery
+
     //Wall
     uboWall.amb = 1.0f; uboWall.gamma = 180.0f; uboWall.sColor = glm::vec3(1.0f); uboWall.visible = 1.0f;
     uboWall.mMat[0] = getWorld(glm::vec3(10,0,4),glm::vec3(0, glm::radians(-90.f), 0));
@@ -147,7 +149,6 @@ void LevelCreation(Project *A){
     for(int i=1; i<A->cellBarsCount; i++){
         uboBarrel.nMat[i] = glm::inverse(glm::transpose(uboBarrel.mMat[i]));
     }
-
         //Initialize AABB for button interaction
     glm::vec3 minVector = glm::vec3(std::numeric_limits<float>::max());
     glm::vec3 maxVector = glm::vec3(-std::numeric_limits<float>::max());
@@ -158,6 +159,10 @@ void LevelCreation(Project *A){
     }
     A->button.minVector = glm::vec3(A->button.startWorld * glm::vec4(minVector,1.0));
     A->button.maxVector = glm::vec3(A->button.startWorld * glm::vec4(maxVector,1.0));
+
+    //Door
+    uboDoor.amb = 1.0f; uboDoor.gamma = 180.0f; uboDoor.sColor = glm::vec3(1.0f); uboDoor.visible = 1.0f;
+    A->door.startWorld = getWorld(glm::vec3(3.33,0,-16.3),glm::vec3(0,0,0));
     
     //Torches
     uboTorch.amb = 1.0f; uboTorch.gamma = 180.0f; uboTorch.sColor = glm::vec3(1.0f); uboTorch.visible = 1.0f;
@@ -172,7 +177,7 @@ void LevelCreation(Project *A){
         uboTorch.nMat[i] = glm::inverse(glm::transpose(uboTorch.mMat[i]));
     }
 
-    //Candles w
+    //Candles 
     uboCandle.amb = 1.0f; uboCandle.gamma = 180.0f; uboCandle.sColor = glm::vec3(1.0f); uboCandle.visible = 1.0f,
     uboCandle.emission = glm::vec3(1.0, 0.3, 0.0);
     uboCandle.mMat[0] = getWorld(glm::vec3(1.5, 0.15, 6.5), glm::vec3(0));
@@ -302,11 +307,7 @@ void LevelCreation(Project *A){
 
 
     //Level 2;
-    Model<VertexVColor> &MFloor2 = A->MFloor2;
     Model<VertexMesh> &MGrass = A->MGrass;
-    MeshUniformBlock &uboWall2 = A->uboWall2;  
-    MeshUniformBlock &uboCorner2 = A->uboCorner2; 
-    MeshUniformBlock &uboFloor2 = A->uboFloor2;
     MeshUniformBlock &uboGrass = A->uboGrass;
 
     MGrass.vertices.push_back({{-50.0,-0.01f,-50.0f},{0.0f,1.0f,0.0f},{0,0}});
@@ -318,51 +319,4 @@ void LevelCreation(Project *A){
     uboGrass.amb = 1.0f; uboGrass.gamma = 180.0f; uboGrass.sColor = glm::vec3(1); uboGrass.visible = 1.0f;
     uboGrass.mMat[0]=glm::mat4(1); 
     uboGrass.nMat[0]=glm::inverse(glm::transpose(uboGrass.mMat[0]));
-
-
-    uboWall2.amb = 1.0f; uboWall2.gamma = 180.0f; uboWall2.sColor = glm::vec3(1.0f); uboWall2.visible = 1.0f;
-    uboWall2.mMat[0] = getWorld(glm::vec3(10,0,4),glm::vec3(0, glm::radians(-90.f), 0));
-    uboWall2.mMat[1] = getWorld(glm::vec3(10,0,6),glm::vec3(0, glm::radians(-90.f), 0));
-    uboWall2.mMat[2] = getWorld(glm::vec3(4,0,0),glm::vec3(0));
-    uboWall2.mMat[3] = getWorld(glm::vec3(6,0,0),glm::vec3(0));
-    uboWall2.mMat[4] = getWorld(glm::vec3(4,0,10),glm::vec3(0, glm::radians(180.f), 0));
-    uboWall2.mMat[5] = getWorld(glm::vec3(6,0,10),glm::vec3(0, glm::radians(180.f), 0));
-    uboWall2.mMat[6] = getWorld(glm::vec3(0,0,2),glm::vec3(0, glm::radians(90.f), 0));
-    uboWall2.mMat[7] = getWorld(glm::vec3(0,0,8),glm::vec3(0, glm::radians(90.f), 0));
-    for(int i=0; i<8; i++){
-        uboWall2.nMat[i] = glm::inverse(glm::transpose(uboWall2.mMat[i]));
-    }
-
-    uboCorner2.amb = 1.0f; uboCorner2.gamma = 180.0f; uboCorner2.sColor = glm::vec3(1.0f); uboCorner2.visible = 1.0f;
-    uboCorner2.mMat[0] = getWorld(glm::vec3(0,0,10),glm::vec3(0, glm::radians(90.f), 0));;
-    uboCorner2.mMat[1] = getWorld(glm::vec3(10,0,10),glm::vec3(0, glm::radians(180.f), 0));
-    uboCorner2.mMat[2] = getWorld(glm::vec3(0,0,0),glm::vec3(0));
-    uboCorner2.mMat[3] = getWorld(glm::vec3(10,0,0),glm::vec3(0, glm::radians(-90.f), 0));
-    for(int i=0; i<4; i++){
-        uboCorner2.nMat[i] = glm::inverse(glm::transpose(uboCorner2.mMat[i]));
-    }
-
-    //Floor
-    MFloor2.vertices.push_back({{10.0f,0.0f,0.0f},{0.0f,1.0f,0.0f},{fColor,fColor,fColor}});
-    MFloor2.vertices.push_back({{10.0f,0.0f,10.0f},{0.0f,1.0f,0.0f},{fColor,fColor,fColor}});
-    MFloor2.vertices.push_back({{0.0f,0.0f,10.0f},{0.0f,1.0f,0.0f},{fColor,fColor,fColor}});
-    MFloor2.vertices.push_back({{0.0f,0.0f,0.0f},{0.0f,1.0f,0.0f},{fColor,fColor,fColor}});
-
-    MFloor2.indices.push_back(0); MFloor2.indices.push_back(1); MFloor2.indices.push_back(2); 
-    MFloor2.indices.push_back(2); MFloor2.indices.push_back(3); MFloor2.indices.push_back(0);
-
-    //Ceiling
-    MFloor2.vertices.push_back({{10.0f,2.5f,0.0f},{0.0f,-1.0f,0.0f},{fColor,fColor,fColor}});
-    MFloor2.vertices.push_back({{10.0f,2.5f,10.0f},{0.0f,-1.0f,0.0f},{fColor,fColor,fColor}});
-    MFloor2.vertices.push_back({{0.0f,2.5f,10.0f},{0.0f,-1.0f,0.0f},{fColor,fColor,fColor}});
-    MFloor2.vertices.push_back({{0.0f,2.5f,0.0f},{0.0f,-1.0f,0.0f},{fColor,fColor,fColor}});
-
-    MFloor2.indices.push_back(4); MFloor2.indices.push_back(5); MFloor2.indices.push_back(6); 
-    MFloor2.indices.push_back(6); MFloor2.indices.push_back(7); MFloor2.indices.push_back(4);
-
-    //Door wall
-
-    uboFloor2.amb = 1.0f; uboFloor2.gamma = 180.0f; uboFloor2.sColor = glm::vec3(1); uboFloor2.visible = 1.0f;
-    uboFloor2.mMat[0]=glm::mat4(1); 
-    uboFloor2.nMat[0]=glm::inverse(glm::transpose(uboFloor2.mMat[0]));
 }

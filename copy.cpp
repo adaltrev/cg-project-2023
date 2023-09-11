@@ -93,7 +93,6 @@ struct DoorData{
 class Project;
 void GameLogic(Project *A);
 void LevelCreation(Project *A);
-void switchScene(Project *A);
 PlayerData initData(Model<VertexMesh> &Model, int scene, glm::mat4 world, float scale);
 glm::mat4 getWorld(glm::vec3 pos, glm::vec3 rot);
 
@@ -113,17 +112,12 @@ class Project : public BaseProject {
 	ButtonData button;
 	DoorData door;
 
-	
-
 	//Uniform blocks and models
-	MeshUniformBlock uboWall, uboCorner, uboBrickWall, uboBrickCorner, uboCellBars, uboFloor, uboBarrel, uboDoor, uboExit, uboSkeleton1, uboSkeleton2, uboBarrels, uboTorch, uboCandle;
-	Model<VertexMesh> MCorner, MWall, MCellBars, MBrickWall, MBrickCorner, MBarrel, MDoor, MSkeleton1, MSkeleton2, MBarrels, MTorch, MCandle;
+	MeshUniformBlock uboWall, uboCorner, uboBrickWall, uboBrickCorner, uboCellBars, uboFloor, uboBarrel, uboDoor, uboExit, uboSkeleton1, uboSkeleton2, uboBarrels, uboTorch, uboCandle, uboGrass;
+	Model<VertexMesh> MCorner, MWall, MCellBars, MBrickWall, MBrickCorner, MBarrel, MDoor, MSkeleton1, MSkeleton2, MBarrels, MTorch, MCandle, MGrass;
 	Model<VertexVColor> MFloor, MExit;
 	int wallCount, cornerCount, brickWallCount, brickCornerCount, cellBarsCount, barrelCount, torchCount, candleCount;
 	
-	Model<VertexMesh> MCorner2, MWall2, MGrass;
-	Model<VertexVColor> MFloor2;
-	MeshUniformBlock uboWall2, uboCorner2, uboFloor2, uboGrass;
 	
 
 	protected:
@@ -146,12 +140,9 @@ class Project : public BaseProject {
 	Model<VertexMesh> MStatue0, MStatue1, MStatue2, MStatue3;
 
 	DescriptorSet DSGubo, DSMenu, DSCrosshair; 
-	DescriptorSet DSWall, DSCorner, DSBrickWall, DSBrickCorner, DSCellBars, DSFloor, DSExit;
+	DescriptorSet DSWall, DSCorner, DSBrickWall, DSBrickCorner, DSCellBars, DSFloor, DSExit, DSGrass;
 	DescriptorSet DSBarrel, DSDoor, DSSkeleton1, DSSkeleton2, DSBarrels, DSTorch, DSCandle; 
 	DescriptorSet DSStatue0, DSStatue1, DSStatue2, DSStatue3;
-
-	
-	DescriptorSet DSWall2, DSCorner2, DSFloor2, DSGrass;
 
 	Texture TMenu, TCrosshair, TCrosshairAlt, TVarious, TStone, TGrass;
  	
@@ -249,13 +240,7 @@ class Project : public BaseProject {
 		
 
 		// Pipelines [Shader couples]
-		// The second parameter is the pointer to the vertex definition
-		// Third and fourth parameters are respectively the vertex and fragment shaders
-		// The last array, is a vector of pointer to the layouts of the sets that will
-		// be used in this pipeline. The first element will be set 0, and so on..
 		PMesh.init(this, &VMesh, "shaders/MeshVert.spv", "shaders/MeshFrag.spv", {&DSLGubo, &DSLMesh});
-		/*PMesh.setAdvancedFeatures(VK_COMPARE_OP_ALWAYS, VK_POLYGON_MODE_FILL,
- 								    VK_CULL_MODE_NONE, true);*/
 		PPlayer.init(this, &VMesh, "shaders/PlayerVert.spv", "shaders/PlayerFrag.spv", {&DSLGubo, &DSLPlayer});
 		POverlay.init(this, &VOverlay, "shaders/OverlayVert.spv", "shaders/OverlayFrag.spv", {&DSLOverlay});
 		POverlay.setAdvancedFeatures(VK_COMPARE_OP_ALWAYS, VK_POLYGON_MODE_FILL,
@@ -275,7 +260,7 @@ class Project : public BaseProject {
 		//Init gubo
 		gubo.DlightDir = glm::normalize(glm::vec3(1, 2, 3));
 		gubo.DlightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-		gubo.AmbLightColor = glm::vec3(0.015f);
+		gubo.AmbLightColor = glm::vec3(0.01f);
 		gubo.PlightColor = glm::vec3(1.0, 0.3, 0.0);
 		
 		gubo.PlightPos[0] = glm::vec3(-2.8,1.75,-0.7); 
@@ -336,8 +321,10 @@ class Project : public BaseProject {
 		MBarrel.init(this, &VMesh, "models/barrel.001.mgcg", MGCG);	
 
 		LevelCreation(this);
+
 		MFloor.initMesh(this, &VVColor);
 		MExit.initMesh(this, &VVColor);
+		MGrass.initMesh(this, &VMesh);
 		MCorner.init(this, &VMesh, "models/tunnel/tunnel.029_Mesh.6128.mgcg", MGCG);
 		MWall.init(this, &VMesh, "models/tunnel/tunnel.005_Mesh.7961.mgcg", MGCG);
 		MBrickWall.init(this, &VMesh, "models/tunnel/tunnel.031_Mesh.7927.mgcg", MGCG);
@@ -348,16 +335,7 @@ class Project : public BaseProject {
 		MBarrels.init(this, &VMesh, "models/barrel.002_Mesh.4450.mgcg", MGCG);
 		MTorch.init(this, &VMesh, "models/light.002_Mesh.6811.mgcg", MGCG);
 		MCandle.init(this, &VMesh, "models/light.004_Mesh.6798.mgcg", MGCG);
-
-		uboDoor.amb = 1.0f; uboDoor.gamma = 180.0f; uboDoor.sColor = glm::vec3(1.0f); uboDoor.visible = 1.0f;
-		door.startWorld = getWorld(glm::vec3(3.33,0,-16.3),glm::vec3(0,0,0));
-		MDoor.init(this, &VMesh, "models/door_019_Mesh.114.mgcg", MGCG);
-
-		//Scene 2
-		MGrass.initMesh(this, &VMesh);	
-		MFloor2.initMesh(this, &VVColor);
-		MCorner2.init(this, &VMesh, "models/tunnel/tunnel.029_Mesh.6128.mgcg", MGCG);
-		MWall2.init(this, &VMesh, "models/tunnel/tunnel.005_Mesh.7961.mgcg", MGCG);				
+		MDoor.init(this, &VMesh, "models/door_019_Mesh.114.mgcg", MGCG);		
 	}
 	
 
@@ -465,20 +443,6 @@ class Project : public BaseProject {
 		DSExit.init(this, &DSLVColor, {
 			{0, UNIFORM, sizeof(MeshUniformBlock), nullptr}
 		});
-
-		DSFloor2.init(this, &DSLVColor, {
-			{0, UNIFORM, sizeof(MeshUniformBlock), nullptr}
-		});
-
-		//Scene 2
-		DSCorner2.init(this, &DSLMesh, {
-					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
-					{1, TEXTURE, 0, &TVarious}
-		});	
-		DSWall2.init(this, &DSLMesh, {
-					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
-					{1, TEXTURE, 0, &TVarious}
-		});
 		DSGrass.init(this, &DSLMesh, {
 					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
 					{1, TEXTURE, 0, &TGrass}
@@ -515,14 +479,8 @@ class Project : public BaseProject {
 		DSSkeleton1.cleanup();
 		DSSkeleton2.cleanup();
 		DSBarrels.cleanup();
-		
-		DSCorner2.cleanup();
-		DSWall2.cleanup();
-		DSFloor2.cleanup();
 		DSGrass.cleanup();
-
 		DSGubo.cleanup();
-
 	}
 
 	// Here you destroy all the Models, Texture and Desc. Set Layouts you created!
@@ -545,10 +503,10 @@ class Project : public BaseProject {
 		MStatue1.cleanup();
 		MStatue2.cleanup();
 		MStatue3.cleanup();
-		MCorner.cleanup(); MCorner2.cleanup();
-		MWall.cleanup(); MWall2.cleanup();
+		MCorner.cleanup();
+		MWall.cleanup();
 		MCellBars.cleanup();
-		MFloor.cleanup(); MFloor2.cleanup();
+		MFloor.cleanup();
 		MExit.cleanup();
 		MBrickWall.cleanup();
 		MBrickCorner.cleanup();
@@ -664,16 +622,7 @@ class Project : public BaseProject {
 				vkCmdDrawIndexed(commandBuffer,
 					static_cast<uint32_t>(MCandle.indices.size()), candleCount, 0, 0, 0);			
 				
-				MTorch.bind(commandBuffer);
-				DSTorch.bind(commandBuffer, PMesh, 1, currentImage);	
-				vkCmdDrawIndexed(commandBuffer,
-					static_cast<uint32_t>(MTorch.indices.size()), torchCount, 0, 0, 0);			
-				
-				MCandle.bind(commandBuffer);
-				DSCandle.bind(commandBuffer, PMesh, 1, currentImage);	
-				vkCmdDrawIndexed(commandBuffer,
-					static_cast<uint32_t>(MCandle.indices.size()), candleCount, 0, 0, 0);			
-				
+					
 				//VColor
 				DSGubo.bind(commandBuffer,PVColor,0,currentImage);
 				PVColor.bind(commandBuffer);
@@ -698,26 +647,10 @@ class Project : public BaseProject {
 				//Mesh
 				DSGubo.bind(commandBuffer, PMesh, 0, currentImage);
 				PMesh.bind(commandBuffer);
-				MCorner2.bind(commandBuffer);
-				DSCorner2.bind(commandBuffer, PMesh, 1, currentImage);	
-				vkCmdDrawIndexed(commandBuffer,
-					static_cast<uint32_t>(MCorner2.indices.size()), cornerCount, 0, 0, 0);
-				MWall2.bind(commandBuffer);
-				DSWall2.bind(commandBuffer, PMesh, 1, currentImage);	
-				vkCmdDrawIndexed(commandBuffer,
-					static_cast<uint32_t>(MWall2.indices.size()), wallCount, 0, 0, 0);
 				MGrass.bind(commandBuffer);
 				DSGrass.bind(commandBuffer, PMesh, 1, currentImage);	
 				vkCmdDrawIndexed(commandBuffer,
-					static_cast<uint32_t>(MGrass.indices.size()), wallCount, 0, 0, 0);
-				
-				//VColor
-				DSGubo.bind(commandBuffer,PVColor,0,currentImage);
-				PVColor.bind(commandBuffer);
-				MFloor2.bind(commandBuffer);
-				DSFloor2.bind(commandBuffer,PVColor,1,currentImage);
-				vkCmdDrawIndexed(commandBuffer,
-					static_cast<uint32_t>(MFloor2.indices.size()),1,0,0,0);
+					static_cast<uint32_t>(MGrass.indices.size()), 1, 0, 0, 0);
 				
 				//Overlay
 				POverlay.bind(commandBuffer);
@@ -744,7 +677,7 @@ class Project : public BaseProject {
 
 		glm::mat4 rot; 
 
-		//Update uniforms for all object, based on the current scene
+		//Update uniforms for all objects, based on the current scene
 		switch(currentScene){
 			case 0: //Start Menu
 				uboMenu.visible = 1.0f;
@@ -754,10 +687,11 @@ class Project : public BaseProject {
 
 			case 1: //Level 1
 
-				//Scenery
+				//Floor
 				uboFloor.mvpMat[0] = Prj * View * uboFloor.mMat[0];	
 				DSFloor.map(currentImage, &uboFloor, sizeof(uboFloor), 0);
 
+				//Scenery
 				for(int i = 0; i<cornerCount; i++){
 					uboCorner.mvpMat[i] = Prj * View * uboCorner.mMat[i];
 				}
@@ -846,21 +780,9 @@ class Project : public BaseProject {
 				gubo.eyePos = camPos;
 				DSGubo.map(currentImage, &gubo, sizeof(gubo), 0);
 
-				uboFloor2.mvpMat[0] = Prj * View * uboFloor2.mMat[0];	
-				DSFloor2.map(currentImage, &uboFloor2, sizeof(uboFloor2), 0);
-
 				uboGrass.mvpMat[0] = Prj * View * uboGrass.mMat[0];	
 				DSGrass.map(currentImage, &uboGrass, sizeof(uboGrass), 0);
 
-				for(int i = 0; i<cornerCount; i++){
-					uboCorner2.mvpMat[i] = Prj * View * uboCorner2.mMat[i];
-				}
-				DSCorner2.map(currentImage, &uboCorner2, sizeof(uboCorner2), 0);
-
-				for(int i = 0; i<wallCount; i++){
-					uboWall2.mvpMat[i] = Prj * View * uboWall2.mMat[i];
-				}
-				DSWall2.map(currentImage, &uboWall2, sizeof(uboWall2), 0);
 
 				//Crosshair
 				uboCrosshair.visible = 1.0f;
