@@ -46,7 +46,7 @@ void GameLogic(Project *A){
         glm::vec3 uy = glm::vec3(0,1,0);
         glm::vec3 uz = glm::vec3(glm::rotate(glm::mat4(1),alpha, glm::vec3(0,1,0)) * glm::vec4(0,0,-1,1));
         A->camPos += ux * MOVE_SPEED * m.x * deltaT;
-        A->camPos += uy * MOVE_SPEED * m.y * deltaT;
+        //A->camPos += uy * MOVE_SPEED * m.y * deltaT;
         A->camPos += uz * MOVE_SPEED * m.z * deltaT;
 
         //Compute projection + view		

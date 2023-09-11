@@ -17,6 +17,8 @@ void LevelCreation(Project *A){
     MeshUniformBlock &uboFloor = A->uboFloor;
     MeshUniformBlock &uboBarrel = A->uboBarrel;
     MeshUniformBlock &uboExit = A->uboExit;
+    MeshUniformBlock &uboCandle = A->uboCandle;
+    MeshUniformBlock &uboTorch = A->uboTorch;
     MeshUniformBlock &uboSkeleton1 = A->uboSkeleton1;
     MeshUniformBlock &uboSkeleton2 = A->uboSkeleton2;
     MeshUniformBlock &uboBarrels = A->uboBarrels;
@@ -170,8 +172,9 @@ void LevelCreation(Project *A){
         uboTorch.nMat[i] = glm::inverse(glm::transpose(uboTorch.mMat[i]));
     }
 
-    //Candles 
-    uboCandle.amb = 1.0f; uboCandle.gamma = 180.0f; uboCandle.sColor = glm::vec3(1.0f); uboCandle.visible = 1.0f;
+    //Candles w
+    uboCandle.amb = 1.0f; uboCandle.gamma = 180.0f; uboCandle.sColor = glm::vec3(1.0f); uboCandle.visible = 1.0f,
+    uboCandle.emission = glm::vec3(1.0, 0.3, 0.0);
     uboCandle.mMat[0] = getWorld(glm::vec3(1.5, 0.15, 6.5), glm::vec3(0));
     uboCandle.mMat[1] = getWorld(glm::vec3(6.5, 0.15, 1.5), glm::vec3(0));
     uboCandle.mMat[2] = getWorld(glm::vec3(-0.7, 0.15, 12.5), glm::vec3(0));
@@ -182,6 +185,8 @@ void LevelCreation(Project *A){
     for(int i=0; i<A->candleCount; i++){
         uboCandle.nMat[i] = glm::inverse(glm::transpose(uboCandle.mMat[i]));
     }
+
+    
     //Floor
     MFloor.vertices.push_back({{10.0f,0.0f,0.0f},{0.0f,1.0f,0.0f},{fColor,fColor,fColor}});
     MFloor.vertices.push_back({{10.0f,0.0f,13.5f},{0.0f,1.0f,0.0f},{fColor,fColor,fColor}});

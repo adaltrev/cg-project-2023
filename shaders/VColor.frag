@@ -46,9 +46,6 @@ void main() {
 	for(int i = 0; i < numPointLights; i++){
 		vec3 L = normalize(gubo.PlightPos[i] - fragPos);
 		vec3 lightColor = gubo.PlightColor.xyz * pow(g/length(gubo.PlightPos[i] - fragPos), beta);			
-	
-		//vec3 MD = fragColor.rgb * 0.99f * clamp(dot(N, L),0.0,1.0);
-		//vec3 MS = vec3(pow(clamp(dot(N, normalize(L + V)),0.0,1.0), 160.0f));
 
 		vec3 DiffSpec = BRDF(V, N, L, MD, sigma);
 		finalColor += DiffSpec * lightColor.rgb;

@@ -45,20 +45,16 @@ void main() {
 	vec3 finalColor = vec3(0);
 
 
-
 	for(int i = 0; i < numPointLights; i++){
 		vec3 L = normalize(gubo.PlightPos[i] - fragPos);
-		vec3 lightColor = gubo.PlightColor.xyz * pow(g/length(gubo.PlightPos[i] - fragPos), beta);			
-		
-		//vec3 Diffuse = MD * 0.99f * clamp(dot(N, L),0.0,1.0);
-		//vec3 MS = vec3(pow(clamp(dot(N, normalize(L + V)),0.0,1.0), 160.0f));;
-		
+		vec3 lightColor = gubo.PlightColor.xyz * pow(g/length(gubo.PlightPos[i] - fragPos), beta);						
 		vec3 DiffSpec = BRDF(V, N, L, MD, sigma);
 		finalColor += DiffSpec * lightColor.rgb;
 	}
 	finalColor = clamp(ubo.emission + finalColor + MA, 0.0, 1.0);
 
 	outColor = vec4(finalColor, 1.0f);
+	
 
 }
 

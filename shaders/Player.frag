@@ -18,7 +18,7 @@ layout(set = 0, binding = 0) uniform GlobalUniformBufferObject {
 	vec3 AmbLightColor;	
 	vec3 eyePos;
 	vec3 PlightPos[numPointLights];
-	vec3 PlightColor;		
+	vec3 PlightColor;	
 } gubo;
 
 layout(set = 1, binding = 0) uniform UniformBufferObject {
@@ -44,10 +44,7 @@ void main() {
 	for(int i = 0; i < numPointLights; i++){
 		vec3 L = normalize(gubo.PlightPos[i] - fragPos);
 		vec3 lightColor = gubo.PlightColor.xyz * pow(g/length(gubo.PlightPos[i] - fragPos), beta);			
-		
-		//vec3 Diffuse = MD * 0.99f * clamp(dot(N, L),0.0,1.0);
-		//vec3 MS = vec3(pow(clamp(dot(N, normalize(L + V)),0.0,1.0), 160.0f));;
-		
+	
 		vec3 r = -reflect(L,N);
 		vec3 fdiffuse = MD*clamp(dot(L,N),0.0,1.0);
 		vec3 fspecular = vec3(1.0f) * pow(clamp(dot(V,r),0.0,1.0), ubo.gamma);

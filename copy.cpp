@@ -275,7 +275,7 @@ class Project : public BaseProject {
 		//Init gubo
 		gubo.DlightDir = glm::normalize(glm::vec3(1, 2, 3));
 		gubo.DlightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-		gubo.AmbLightColor = glm::vec3(0.01f);
+		gubo.AmbLightColor = glm::vec3(0.015f);
 		gubo.PlightColor = glm::vec3(1.0, 0.3, 0.0);
 		
 		gubo.PlightPos[0] = glm::vec3(-2.8,1.75,-0.7); 
