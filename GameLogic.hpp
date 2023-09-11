@@ -101,7 +101,7 @@ void GameLogic(Project *A){
                 A->currentScene = 2;
                 A->cornerCount = 4;
                 A->wallCount = 8;
-                A->camPos = glm::vec3(5.0f, camHeight, 3.0f);
+                A->camPos = glm::vec3(8.0f, camHeight, 5.0f);
                 alpha = glm::radians(90.0f);
                 beta = 0.0f;
                 A->RebuildPipeline();
@@ -190,17 +190,6 @@ void GameLogic(Project *A){
                         A->door.status = 2;
                         A->door.rot=glm::radians(90.f);
                 }
-            }
-            break;
-        
-        case 2:
-            if(handleFire) {
-                A->currentScene = 0;
-                A->camPos = glm::vec3(9.0f, camHeight, 7.0f);
-                alpha = glm::radians(90.0f);
-                beta = 0.0f;
-                A->RebuildPipeline();
-                switchScene(A);	                	
             }
             break;
     }

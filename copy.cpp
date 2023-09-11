@@ -116,8 +116,8 @@ class Project : public BaseProject {
 	
 
 	//Uniform blocks and models
-	MeshUniformBlock uboWall, uboCorner, uboBrickWall, uboBrickCorner, uboCellBars, uboFloor, uboBarrel, uboDoor, uboExit, uboTorch, uboCandle;
-	Model<VertexMesh> MCorner, MWall, MCellBars, MBrickWall, MBrickCorner, MBarrel, MDoor, MTorch, MCandle;
+	MeshUniformBlock uboWall, uboCorner, uboBrickWall, uboBrickCorner, uboCellBars, uboFloor, uboBarrel, uboDoor, uboExit, uboSkeleton1, uboSkeleton2, uboBarrels, uboTorch, uboCandle;
+	Model<VertexMesh> MCorner, MWall, MCellBars, MBrickWall, MBrickCorner, MBarrel, MDoor, MSkeleton1, MSkeleton2, MBarrels, MTorch, MCandle;
 	Model<VertexVColor> MFloor, MExit;
 	int wallCount, cornerCount, brickWallCount, brickCornerCount, cellBarsCount, barrelCount, torchCount, candleCount;
 	
@@ -147,7 +147,7 @@ class Project : public BaseProject {
 
 	DescriptorSet DSGubo, DSMenu, DSCrosshair; 
 	DescriptorSet DSWall, DSCorner, DSBrickWall, DSBrickCorner, DSCellBars, DSFloor, DSExit;
-	DescriptorSet DSBarrel, DSDoor, DSTorch, DSCandle; 
+	DescriptorSet DSBarrel, DSDoor, DSSkeleton1, DSSkeleton2, DSBarrels, DSTorch, DSCandle; 
 	DescriptorSet DSStatue0, DSStatue1, DSStatue2, DSStatue3;
 
 	
@@ -193,12 +193,6 @@ class Project : public BaseProject {
 	void localInit() {
 		// Descriptor Layouts [what will be passed to the shaders]
 		DSLMesh.init(this, {
-					// this array contains the bindings:
-					// first  element : the binding number
-					// second element : the type of element (buffer or texture)
-					//                  using the corresponding Vulkan constant
-					// third  element : the pipeline stage where it will be used
-					//                  using the corresponding Vulkan constant
 					{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
 					{1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
 				});
@@ -211,7 +205,6 @@ class Project : public BaseProject {
 					{1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
 					{2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
 				});
-
 		DSLVColor.init(this, {
 					{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
 				});
@@ -224,33 +217,8 @@ class Project : public BaseProject {
 
 		// Vertex descriptors
 		VMesh.init(this, {
-				  // this array contains the bindings
-				  // first  element : the binding number
-				  // second element : the stride of this binging
-				  // third  element : whether this parameter change per vertex or per instance
-				  //                  using the corresponding Vulkan constant
 				  {0, sizeof(VertexMesh), VK_VERTEX_INPUT_RATE_VERTEX}
 				}, {
-				  // this array contains the location
-				  // first  element : the binding number
-				  // second element : the location number
-				  // third  element : the offset of this element in the memory record
-				  // fourth element : the data type of the element
-				  //                  using the corresponding Vulkan constant
-				  // fifth  elmenet : the size in byte of the element
-				  // sixth  element : a constant defining the element usage
-				  //                   POSITION - a vec3 with the position
-				  //                   NORMAL   - a vec3 with the normal vector
-				  //                   UV       - a vec2 with a UV coordinate
-				  //                   COLOR    - a vec4 with a RGBA color
-				  //                   TANGENT  - a vec4 with the tangent vector
-				  //                   OTHER    - anything else
-				  //
-				  // ***************** DOUBLE CHECK ********************
-				  //    That the Vertex data structure you use in the "offsetoff" and
-				  //	in the "sizeof" in the previous array, refers to the correct one,
-				  //	if you have more than one vertex format!
-				  // ***************************************************
 				  {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexMesh, pos),
 				         sizeof(glm::vec3), POSITION},
 				  {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexMesh, norm),
@@ -375,6 +343,9 @@ class Project : public BaseProject {
 		MBrickWall.init(this, &VMesh, "models/tunnel/tunnel.031_Mesh.7927.mgcg", MGCG);
 		MBrickCorner.init(this, &VMesh, "models/tunnel/tunnel.030_Mesh.7968.mgcg", MGCG);
 		MCellBars.init(this, &VMesh, "models/tunnel/tunnel.033_Mesh.6508.mgcg", MGCG);
+		MSkeleton1.init(this, &VMesh, "models/bones.028_Mesh.5846.mgcg", MGCG);
+		MSkeleton2.init(this, &VMesh, "models/bones.033_Mesh.700.mgcg", MGCG);
+		MBarrels.init(this, &VMesh, "models/barrel.002_Mesh.4450.mgcg", MGCG);
 		MTorch.init(this, &VMesh, "models/light.002_Mesh.6811.mgcg", MGCG);
 		MCandle.init(this, &VMesh, "models/light.004_Mesh.6798.mgcg", MGCG);
 
@@ -383,16 +354,10 @@ class Project : public BaseProject {
 		MDoor.init(this, &VMesh, "models/door_019_Mesh.114.mgcg", MGCG);
 
 		//Scene 2
+		MGrass.initMesh(this, &VMesh);	
 		MFloor2.initMesh(this, &VVColor);
 		MCorner2.init(this, &VMesh, "models/tunnel/tunnel.029_Mesh.6128.mgcg", MGCG);
-		MWall2.init(this, &VMesh, "models/tunnel/tunnel.005_Mesh.7961.mgcg", MGCG);
-		MGrass.vertices.push_back({{10.0f,0.0f,0.0f},{0.0f,1.0f,0.0f},{0,0}});
-   		MGrass.vertices.push_back({{10.0f,0.0f,13.5f},{0.0f,1.0f,0.0f},{0,0}});
-    	MGrass.vertices.push_back({{-5.75f,0.0f,13.5f},{0.0f,1.0f,0.0f},{0,0}});
-    	MGrass.vertices.push_back({{-5.75f,0.0f,0.0f},{0.0f,1.0f,0.0f},{0,0}});
-   	 	MGrass.indices.push_back(0); MGrass.indices.push_back(1); MGrass.indices.push_back(2); 
-    	MGrass.indices.push_back(2); MGrass.indices.push_back(3); MGrass.indices.push_back(0);
-		MGrass.initMesh(this, &VMesh);			
+		MWall2.init(this, &VMesh, "models/tunnel/tunnel.005_Mesh.7961.mgcg", MGCG);				
 	}
 	
 
@@ -403,6 +368,9 @@ class Project : public BaseProject {
 		POverlay.create();
 		PVColor.create();
 		PPlayer.create();
+		DSGubo.init(this, &DSLGubo, {
+					{0, UNIFORM, sizeof(GlobalUniformBlock), nullptr}
+				});
 		
 		//Overlay
 		DSMenu.init(this, &DSLOverlay, {
@@ -464,6 +432,19 @@ class Project : public BaseProject {
 					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
 					{1, TEXTURE, 0, &TVarious}
 		});
+		DSSkeleton1.init(this, &DSLMesh, {
+					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
+					{1, TEXTURE, 0, &TVarious}
+		});
+		DSSkeleton2.init(this, &DSLMesh, {
+					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
+					{1, TEXTURE, 0, &TVarious}
+		});
+		DSBarrels.init(this, &DSLMesh, {
+					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
+					{1, TEXTURE, 0, &TVarious}
+		});
+		
 		DSTorch.init(this, &DSLMesh, {
 					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
 					{1, TEXTURE, 0, &TVarious}
@@ -488,6 +469,8 @@ class Project : public BaseProject {
 		DSFloor2.init(this, &DSLVColor, {
 			{0, UNIFORM, sizeof(MeshUniformBlock), nullptr}
 		});
+
+		//Scene 2
 		DSCorner2.init(this, &DSLMesh, {
 					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
 					{1, TEXTURE, 0, &TVarious}
@@ -517,10 +500,7 @@ class Project : public BaseProject {
 		// Cleanup datasets
 		DSMenu.cleanup();
 		DSCrosshair.cleanup();
-		DSStatue0.cleanup();
-		DSStatue1.cleanup();
-		DSStatue2.cleanup();
-		DSStatue3.cleanup();
+		DSStatue0.cleanup(); DSStatue1.cleanup(); DSStatue2.cleanup(); DSStatue3.cleanup();
 		DSCorner.cleanup();
 		DSWall.cleanup();
 		DSExit.cleanup();
@@ -532,12 +512,16 @@ class Project : public BaseProject {
 		DSDoor.cleanup();
 		DSTorch.cleanup();
 		DSCandle.cleanup();
-		DSGubo.cleanup();
-
+		DSSkeleton1.cleanup();
+		DSSkeleton2.cleanup();
+		DSBarrels.cleanup();
+		
 		DSCorner2.cleanup();
 		DSWall2.cleanup();
 		DSFloor2.cleanup();
 		DSGrass.cleanup();
+
+		DSGubo.cleanup();
 
 	}
 
@@ -570,6 +554,10 @@ class Project : public BaseProject {
 		MBrickCorner.cleanup();
 		MBarrel.cleanup();
 		MDoor.cleanup();
+		MSkeleton1.cleanup();
+		MSkeleton2.cleanup();
+		MBarrels.cleanup();
+		MGrass.cleanup();
 		MTorch.cleanup();
 		MCandle.cleanup();
 
@@ -652,7 +640,29 @@ class Project : public BaseProject {
 				MDoor.bind(commandBuffer);
 				DSDoor.bind(commandBuffer, PMesh, 1, currentImage);	
 				vkCmdDrawIndexed(commandBuffer,
-					static_cast<uint32_t>(MDoor.indices.size()), 1, 0, 0, 0);			
+					static_cast<uint32_t>(MDoor.indices.size()), 1, 0, 0, 0);
+				MSkeleton1.bind(commandBuffer);
+				DSSkeleton1.bind(commandBuffer, PMesh, 1, currentImage);	
+				vkCmdDrawIndexed(commandBuffer,
+					static_cast<uint32_t>(MSkeleton1.indices.size()), 1, 0, 0, 0);
+				MSkeleton2.bind(commandBuffer);
+				DSSkeleton2.bind(commandBuffer, PMesh, 1, currentImage);	
+				vkCmdDrawIndexed(commandBuffer,
+					static_cast<uint32_t>(MSkeleton2.indices.size()), 1, 0, 0, 0);
+				MBarrels.bind(commandBuffer);
+				DSBarrels.bind(commandBuffer, PMesh, 1, currentImage);	
+				vkCmdDrawIndexed(commandBuffer,
+					static_cast<uint32_t>(MBarrels.indices.size()), 1, 0, 0, 0);			
+				
+				MTorch.bind(commandBuffer);
+				DSTorch.bind(commandBuffer, PMesh, 1, currentImage);	
+				vkCmdDrawIndexed(commandBuffer,
+					static_cast<uint32_t>(MTorch.indices.size()), torchCount, 0, 0, 0);			
+				
+				MCandle.bind(commandBuffer);
+				DSCandle.bind(commandBuffer, PMesh, 1, currentImage);	
+				vkCmdDrawIndexed(commandBuffer,
+					static_cast<uint32_t>(MCandle.indices.size()), candleCount, 0, 0, 0);			
 				
 				MTorch.bind(commandBuffer);
 				DSTorch.bind(commandBuffer, PMesh, 1, currentImage);	
@@ -696,6 +706,10 @@ class Project : public BaseProject {
 				DSWall2.bind(commandBuffer, PMesh, 1, currentImage);	
 				vkCmdDrawIndexed(commandBuffer,
 					static_cast<uint32_t>(MWall2.indices.size()), wallCount, 0, 0, 0);
+				MGrass.bind(commandBuffer);
+				DSGrass.bind(commandBuffer, PMesh, 1, currentImage);	
+				vkCmdDrawIndexed(commandBuffer,
+					static_cast<uint32_t>(MGrass.indices.size()), wallCount, 0, 0, 0);
 				
 				//VColor
 				DSGubo.bind(commandBuffer,PVColor,0,currentImage);
@@ -796,6 +810,15 @@ class Project : public BaseProject {
 				uboDoor.nMat[0] = glm::inverse(glm::transpose(uboDoor.mMat[0]));				
 				uboDoor.mvpMat[0] = Prj * View * uboDoor.mMat[0];
 				DSDoor.map(currentImage, &uboDoor, sizeof(uboDoor), 0);
+
+				uboSkeleton1.mvpMat[0] = Prj * View * uboSkeleton1.mMat[0];
+				DSSkeleton1.map(currentImage, &uboSkeleton1, sizeof(uboSkeleton1), 0);
+
+				uboSkeleton2.mvpMat[0] = Prj * View * uboSkeleton2.mMat[0];
+				DSSkeleton2.map(currentImage, &uboSkeleton2, sizeof(uboSkeleton2), 0);
+
+				uboBarrels.mvpMat[0] = Prj * View * uboBarrels.mMat[0];
+				DSBarrels.map(currentImage, &uboBarrels, sizeof(uboBarrels), 0);
 				
 
 				//Playables				
@@ -819,11 +842,15 @@ class Project : public BaseProject {
 
 
 			case 2:
+				initialBackgroundColor = {1.0f, 1.0f, 1.0f, 1.0f};
 				gubo.eyePos = camPos;
 				DSGubo.map(currentImage, &gubo, sizeof(gubo), 0);
 
 				uboFloor2.mvpMat[0] = Prj * View * uboFloor2.mMat[0];	
 				DSFloor2.map(currentImage, &uboFloor2, sizeof(uboFloor2), 0);
+
+				uboGrass.mvpMat[0] = Prj * View * uboGrass.mMat[0];	
+				DSGrass.map(currentImage, &uboGrass, sizeof(uboGrass), 0);
 
 				for(int i = 0; i<cornerCount; i++){
 					uboCorner2.mvpMat[i] = Prj * View * uboCorner2.mMat[i];
@@ -888,6 +915,7 @@ PlayerData initData(Model<VertexMesh> &Model, int scene, glm::mat4 world, float 
 
 	return data;
 }
+
 
 //Create World Matrix given position and rotation
 glm::mat4 getWorld(glm::vec3 pos, glm::vec3 rot){

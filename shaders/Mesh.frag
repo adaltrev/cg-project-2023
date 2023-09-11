@@ -56,7 +56,7 @@ void main() {
 		vec3 DiffSpec = BRDF(V, N, L, MD, sigma);
 		finalColor += DiffSpec * lightColor.rgb;
 	}
-	finalColor = clamp(finalColor + MA, 0.0, 1.0);
+	finalColor = clamp(ubo.emission + finalColor + MA, 0.0, 1.0);
 
 	outColor = vec4(finalColor, 1.0f);
 
